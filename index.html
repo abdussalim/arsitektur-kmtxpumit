@@ -1,656 +1,1642 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>KMTPUMIT — Arsitektur Sistem &amp; Deployment</title>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arsitektur Infrastruktur Kmtxpumit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#070b14; --panel:#0e1524; --panel2:#131c2e; --line:#22304a; --line-soft:#1a2438;
+    --text:#dde5f1; --muted:#94a4bd; --dim:#6b7c96;
+    --cyan:#22d3ee; --emerald:#34d399; --amber:#fbbf24; --rose:#fb7185;
+    --violet:#a78bfa; --orange:#fb923c;
+    --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Consolas,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:var(--sans); font-size:16px; line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
 
-    body {
-      font-family: 'JetBrains Mono', monospace;
-      background: #020617;
-      min-height: 100vh;
-      padding: 2rem;
-      color: white;
-    }
+  /* ---------- layout ---------- */
+  .page{max-width:1560px;margin:0 auto;padding:2.5rem 1.75rem 4rem;display:grid;grid-template-columns:1fr;gap:2.5rem}
+  @media(min-width:1180px){ .page{grid-template-columns:238px minmax(0,1fr)} }
+  .content{min-width:0;max-width:1180px}
 
-    .container { max-width: 1400px; margin: 0 auto; }
+  /* ---------- sidebar nav (desktop) ---------- */
+  .toc{display:none}
+  @media(min-width:1180px){
+    .toc{display:block;position:sticky;top:2rem;align-self:start;max-height:calc(100vh - 4rem);overflow-y:auto}
+  }
+  .toc-title{font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);margin-bottom:.85rem}
+  .toc a{display:block;padding:.32rem .7rem;color:var(--muted);text-decoration:none;font-size:.83rem;
+    border-left:2px solid var(--line-soft);transition:.15s}
+  .toc a:hover{color:var(--text);border-left-color:var(--cyan);background:rgba(34,211,238,.05)}
+  .toc a .num{color:var(--dim);margin-right:.45rem;font-family:var(--mono);font-size:.75rem}
 
-    .header { margin-bottom: 2rem; }
+  /* ---------- header ---------- */
+  header{border-bottom:1px solid var(--line);padding-bottom:1.6rem;margin-bottom:2.4rem}
+  .eyebrow{display:flex;align-items:center;gap:.6rem;font-family:var(--mono);font-size:.72rem;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:.7rem}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--cyan);animation:pulse 2.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  h1{font-size:2rem;font-weight:700;letter-spacing:-.02em;line-height:1.25;margin-bottom:.6rem}
+  .lede{color:var(--muted);font-size:1.02rem;max-width:74ch}
+  .meta{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.2rem}
+  .meta span{font-family:var(--mono);font-size:.72rem;color:var(--muted);
+    background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:.28rem .75rem}
 
-    .header-row {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 0.5rem;
-    }
+  /* ---------- mode switch ---------- */
+  .switch{display:flex;align-items:center;gap:.85rem;flex-wrap:wrap;margin-top:1.4rem;
+    background:var(--panel);border:1px solid var(--line);border-radius:.7rem;padding:.7rem .9rem}
+  .switch p{font-size:.82rem;color:var(--muted);margin:0;max-width:none}
+  .seg{display:inline-flex;background:#0a1120;border:1px solid var(--line);border-radius:.5rem;padding:3px}
+  .seg button{font-family:var(--sans);font-size:.8rem;font-weight:500;color:var(--muted);
+    background:transparent;border:0;border-radius:.35rem;padding:.35rem .95rem;cursor:pointer;transition:.15s}
+  .seg button[aria-pressed="true"]{background:rgba(34,211,238,.14);color:var(--cyan)}
 
-    .pulse-dot {
-      width: 12px;
-      height: 12px;
-      background: #22d3ee;
-      border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
+  /* ---------- sections ---------- */
+  section{margin-bottom:3.4rem;scroll-margin-top:1.5rem}
+  h2{font-size:1.35rem;font-weight:650;letter-spacing:-.01em;margin-bottom:.35rem;display:flex;gap:.7rem;align-items:baseline}
+  h2 .num{font-family:var(--mono);font-size:.85rem;color:var(--cyan);font-weight:500}
+  .sub{color:var(--muted);font-size:.93rem;margin-bottom:1.5rem;max-width:78ch}
+  h3{font-size:1rem;font-weight:600;margin:1.9rem 0 .7rem;color:#eef3fa}
+  p{margin-bottom:.9rem;max-width:80ch}
+  p:last-child{margin-bottom:0}
 
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
+  /* ---------- callouts ---------- */
+  .plain{background:rgba(34,211,238,.05);border:1px solid rgba(34,211,238,.22);border-left:3px solid var(--cyan);
+    border-radius:.5rem;padding:.95rem 1.15rem;margin:0 0 1.5rem}
+  .plain b{color:var(--cyan);font-weight:600;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;
+    display:block;margin-bottom:.3rem;font-family:var(--mono)}
+  .plain p{margin:0;color:var(--text);font-size:.95rem}
+  .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--amber);
+    border-radius:.5rem;padding:.9rem 1.15rem;margin:1.3rem 0;font-size:.92rem;color:var(--muted)}
+  .note p{font-size:.92rem;color:var(--muted)}
+  .note b{color:var(--amber)}
 
-    h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      letter-spacing: -0.025em;
-    }
+  /* ---------- lists ---------- */
+  ul.clean{list-style:none;margin:0 0 1rem}
+  ul.clean li{position:relative;padding-left:1.35rem;margin-bottom:.55rem;color:var(--muted);font-size:.94rem;max-width:80ch}
+  ul.clean li::before{content:"";position:absolute;left:.35rem;top:.72em;width:5px;height:5px;
+    border-radius:50%;background:var(--line);outline:1px solid var(--line)}
+  ul.clean li b{color:var(--text);font-weight:600}
 
-    .subtitle {
-      color: #94a3b8;
-      font-size: 0.875rem;
-      margin-left: 1.75rem;
-    }
+  ol.steps{list-style:none;counter-reset:s;margin:0 0 1rem}
+  ol.steps li{counter-increment:s;position:relative;padding-left:2.6rem;margin-bottom:1.05rem;
+    color:var(--muted);font-size:.94rem;max-width:80ch}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:.05em;width:1.7rem;height:1.7rem;
+    display:grid;place-items:center;border-radius:50%;background:var(--panel2);border:1px solid var(--line);
+    color:var(--cyan);font-family:var(--mono);font-size:.78rem}
+  ol.steps li b{color:var(--text);font-weight:600}
 
-    .diagram-container {
-      background: rgba(15, 23, 42, 0.5);
-      border-radius: 1rem;
-      border: 1px solid #1e293b;
-      padding: 1.5rem;
-      overflow-x: auto;
-      margin-bottom: 1.5rem;
-    }
+  /* ---------- code ---------- */
+  code{font-family:var(--mono);font-size:.86em;background:#0a1120;border:1px solid var(--line-soft);
+    border-radius:.3rem;padding:.1em .42em;color:#a9d4e8}
+  .block{font-family:var(--mono);font-size:.82rem;background:#0a1120;border:1px solid var(--line);
+    border-radius:.55rem;padding:1rem 1.15rem;overflow-x:auto;color:#a9d4e8;line-height:1.8;margin:1rem 0;
+    white-space:pre}
 
-    svg {
-      width: 100%;
-      min-width: 900px;
-      display: block;
-    }
+  /* ---------- tables ---------- */
+  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:1.1rem 0 1.4rem;
+    border:1px solid var(--line);border-radius:.65rem;background:var(--panel)}
+  table{border-collapse:collapse;width:100%;font-size:.89rem;min-width:520px}
+  th{text-align:left;font-weight:600;color:#eef3fa;background:var(--panel2);padding:.72rem 1rem;
+    border-bottom:1px solid var(--line);font-size:.8rem;letter-spacing:.03em}
+  td{padding:.72rem 1rem;border-bottom:1px solid var(--line-soft);color:var(--muted);vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  td b,td strong{color:var(--text);font-weight:600}
+  td.mono,th.mono{font-family:var(--mono);font-size:.82rem;color:#a9d4e8}
+  .yes{color:var(--emerald);font-weight:600}
+  .no{color:var(--rose);font-weight:600}
 
-    .section-label {
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: #94a3b8;
-      letter-spacing: 0.05em;
-      margin: 0 0 0.75rem 0.25rem;
-      text-transform: uppercase;
-    }
+  /* ---------- cards ---------- */
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(275px,1fr));gap:1rem;margin:1.2rem 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:.75rem;padding:1.15rem 1.25rem}
+  .card h4{font-size:.94rem;font-weight:600;color:#eef3fa;margin-bottom:.55rem;display:flex;align-items:center;gap:.55rem}
+  .card h4::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--cyan);flex:none}
+  .card.c-emerald h4::before{background:var(--emerald)}
+  .card.c-amber h4::before{background:var(--amber)}
+  .card.c-rose h4::before{background:var(--rose)}
+  .card.c-violet h4::before{background:var(--violet)}
+  .card.c-orange h4::before{background:var(--orange)}
+  .card p{font-size:.87rem;color:var(--muted)}
+  .card ul.clean{margin-bottom:0}
+  .card ul.clean li{margin-bottom:.4rem;font-size:.87rem}
 
-    .cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1rem;
-      margin-top: 2rem;
-    }
+  /* ---------- figures ---------- */
+  figure{margin:1.4rem 0 1.6rem;background:var(--panel);border:1px solid var(--line);
+    border-radius:.85rem;padding:1.35rem}
+  .scroller{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  figure svg{width:100%;height:auto;display:block;min-width:720px}
+  figcaption{margin-top:1rem;padding-top:.85rem;border-top:1px solid var(--line-soft);
+    font-size:.83rem;color:var(--dim);text-align:center}
 
-    .card {
-      background: rgba(15, 23, 42, 0.5);
-      border-radius: 0.75rem;
-      border: 1px solid #1e293b;
-      padding: 1.25rem;
-    }
+  /* bayangan tepi: penanda bahwa isinya masih bisa digeser ke samping */
+  .tw,.scroller{
+    background-image:
+      linear-gradient(to right,var(--panel),var(--panel)),
+      linear-gradient(to left,var(--panel),var(--panel)),
+      linear-gradient(to right,rgba(0,0,0,.5),rgba(0,0,0,0)),
+      linear-gradient(to left,rgba(0,0,0,.5),rgba(0,0,0,0));
+    background-position:left center,right center,left center,right center;
+    background-repeat:no-repeat;
+    background-size:26px 100%,26px 100%,15px 100%,15px 100%;
+    background-attachment:local,local,scroll,scroll;
+  }
 
-    .card-header {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 0.75rem;
-    }
+  /* ---------- glossary ---------- */
+  .gloss{display:grid;gap:.7rem}
+  .gloss .row{background:var(--panel);border:1px solid var(--line);border-radius:.6rem;padding:.85rem 1.1rem;
+    display:grid;grid-template-columns:1fr;gap:.25rem}
+  @media(min-width:760px){ .gloss .row{grid-template-columns:200px 1fr;gap:1.2rem;align-items:baseline} }
+  .gloss .term{font-family:var(--mono);font-size:.85rem;color:var(--cyan);font-weight:600}
+  .gloss .desc{font-size:.9rem;color:var(--muted)}
+  .gloss .desc b{color:var(--text);font-weight:600}
 
-    .card-dot { width: 8px; height: 8px; border-radius: 50%; }
+  /* ---------- footer ---------- */
+  footer{border-top:1px solid var(--line);padding-top:1.4rem;color:var(--dim);font-size:.82rem;
+    display:flex;flex-wrap:wrap;gap:.4rem 1.4rem}
+  footer span{font-family:var(--mono)}
 
-    .card-dot.cyan { background: #22d3ee; }
-    .card-dot.emerald { background: #34d399; }
-    .card-dot.violet { background: #a78bfa; }
-    .card-dot.amber { background: #fbbf24; }
-    .card-dot.rose { background: #fb7185; }
+  /* ---------- mode ringkas ---------- */
+  body.ringkas .deep{display:none !important}
 
-    .card h3 { font-size: 0.875rem; font-weight: 600; }
+  /* ---------- navigasi bawah untuk layar kecil ---------- */
+  .mnav,.sheet,.scrim{display:none}
 
-    .card ul {
-      list-style: none;
-      color: #94a3b8;
-      font-size: 0.75rem;
-      line-height: 1.5;
-    }
+  @media(max-width:1179px){
+    body{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+    section{scroll-margin-top:1rem}
 
-    .card li { margin-bottom: 0.375rem; }
+    /* bilah bawah */
+    .mnav{display:block;position:fixed;left:0;right:0;bottom:0;z-index:70;
+      background:rgba(11,17,30,.94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+      border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+    .mnav-progress{height:2px;background:rgba(34,211,238,.12)}
+    .mnav-progress span{display:block;height:100%;width:0;background:var(--cyan);transition:width .1s linear}
+    .mnav-items{display:grid;grid-template-columns:repeat(4,1fr);max-width:560px;margin:0 auto}
+    .mnav-items button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.22rem;
+      min-height:60px;padding:.4rem .2rem;cursor:pointer;background:transparent;border:0;
+      font-family:var(--sans);font-size:.68rem;font-weight:500;color:var(--dim);
+      -webkit-tap-highlight-color:transparent;transition:color .15s}
+    .mnav-items button svg{width:21px;height:21px;stroke:currentColor;fill:none;
+      stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+    .mnav-items button:active{color:var(--text)}
+    .mnav-items button.on{color:var(--cyan)}
+    .mnav-badge{font-family:var(--mono);font-size:.62rem;color:var(--cyan)}
 
-    .footer {
-      text-align: center;
-      margin-top: 1.5rem;
-      color: #475569;
-      font-size: 0.75rem;
-    }
-  </style>
+    /* lapisan gelap di belakang lembar */
+    .scrim{display:block;position:fixed;inset:0;z-index:71;background:rgba(3,7,15,.72);
+      opacity:0;visibility:hidden;transition:opacity .2s,visibility .2s}
+    body.nav-open .scrim{opacity:1;visibility:visible}
+
+    /* lembar daftar isi yang naik dari bawah */
+    .sheet{display:flex;flex-direction:column;position:fixed;left:0;right:0;bottom:0;z-index:72;
+      max-height:78vh;background:var(--panel);border-top:1px solid var(--line);
+      border-radius:1.1rem 1.1rem 0 0;padding-bottom:env(safe-area-inset-bottom,0px);
+      transform:translateY(101%);transition:transform .26s cubic-bezier(.32,.72,0,1)}
+    body.nav-open .sheet{transform:none}
+    body.nav-open{overflow:hidden}
+    .sheet-grip{width:38px;height:4px;border-radius:99px;background:var(--line);
+      margin:.6rem auto .2rem;flex:none}
+    .sheet-head{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;
+      padding:.5rem 1.15rem .7rem;border-bottom:1px solid var(--line-soft);flex:none}
+    .sheet-head b{font-size:.95rem;font-weight:600;color:var(--text)}
+    .sheet-head em{font-style:normal;font-size:.75rem;color:var(--dim);font-family:var(--mono)}
+    .sheet-list{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:.5rem .7rem 1.1rem}
+    .sheet-list a{display:flex;align-items:center;gap:.85rem;min-height:48px;padding:.5rem .75rem;
+      color:var(--muted);text-decoration:none;font-size:.94rem;border-radius:.55rem;
+      border:1px solid transparent}
+    .sheet-list a .num{font-family:var(--mono);font-size:.75rem;color:var(--dim);flex:none;width:1.6rem}
+    .sheet-list a.on{color:var(--text);background:rgba(34,211,238,.08);border-color:rgba(34,211,238,.28)}
+    .sheet-list a.on .num{color:var(--cyan)}
+  }
+
+  /* diagram: versi lebar untuk layar besar, versi tegak untuk layar kecil */
+  .d-mobile{display:none}
+  @media(min-width:720px) and (max-width:900px){
+    figure::before{
+      content:"Geser diagram ke samping untuk melihat bagian kanan";
+      display:block;margin-bottom:.8rem;font-size:.78rem;color:var(--dim);
+      font-family:var(--mono);letter-spacing:.02em}
+  }
+  @media(max-width:719px){
+    .d-wide{display:none}
+    .d-mobile{display:block}
+    .d-mobile svg{width:100%;height:auto;display:block;min-width:0}
+  }
+
+  @media(max-width:640px){
+    body{font-size:15.5px}
+    .page{padding:1.4rem 1rem 3rem;gap:1.5rem}
+    h1{font-size:1.55rem}
+    h2{font-size:1.2rem;gap:.5rem}
+    .lede{font-size:.97rem}
+    figure{padding:.9rem;border-radius:.65rem}
+    .card{padding:1rem}
+    .grid{grid-template-columns:1fr}
+    ol.steps li{padding-left:2.3rem}
+    .switch{flex-direction:column;align-items:flex-start;gap:.6rem}
+    .block{font-size:.78rem}
+    code{overflow-wrap:anywhere}
+  }
+</style>
 </head>
 <body>
-  <div class="container">
-    <!-- Header -->
-    <div class="header">
-      <div class="header-row">
-        <div class="pulse-dot"></div>
-        <h1>KMTPUMIT — Arsitektur Sistem &amp; Deployment</h1>
-      </div>
-      <p class="subtitle">Kubernetes kubeadm 2 node · Traefik + Calico + local-path · namespace kmtxpumit-development · hasil pembacaan langsung dari API server (kubectl), bukan estimasi</p>
-    </div>
 
-    <!-- ================= DIAGRAM 1: KONDISI SAAT INI ================= -->
-    <p class="section-label">1 — Kondisi saat ini (as-is)</p>
-    <div class="diagram-container">
-      <svg viewBox="0 0 1280 1200">
-        <defs>
-          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
-          </marker>
-          <marker id="arrowcyan" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#22d3ee" />
-          </marker>
-          <marker id="arrowemerald" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#34d399" />
-          </marker>
-          <marker id="arrowviolet" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#a78bfa" />
-          </marker>
-          <marker id="arrowrose" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#fb7185" />
-          </marker>
-          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
-          </pattern>
-        </defs>
+<div class="scrim" id="scrim"></div>
 
-        <!-- Background Grid -->
-        <rect width="100%" height="100%" fill="url(#grid)" />
-
-        <!-- ============ ARROWS (drawn early: z-order behind boxes) ============ -->
-
-        <!-- Users -> Host -->
-        <line x1="145" y1="118" x2="145" y2="147" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowcyan)"/>
-        <text x="156" y="138" fill="#94a3b8" font-size="8">HTTPS</text>
-
-        <!-- Host -> Traefik (masuk cluster) -->
-        <line x1="300" y1="231" x2="300" y2="310" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowcyan)"/>
-        <text x="312" y="252" fill="#94a3b8" font-size="8">NodePort 30625 (https) / 32144 (http)</text>
-
-        <!-- Traefik -> IngressRoute -> Middleware -->
-        <line x1="368" y1="365" x2="380" y2="365" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowcyan)"/>
-        <line x1="692" y1="365" x2="704" y2="365" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowcyan)"/>
-
-        <!-- IngressRoute -> frontend services (bus) -->
-        <path d="M 670 415 V 486" fill="none" stroke="#22d3ee" stroke-width="1.5"/>
-        <path d="M 490 486 H 900" fill="none" stroke="#22d3ee" stroke-width="1.5"/>
-        <path d="M 490 486 V 503" fill="none" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowcyan)"/>
-        <path d="M 695 486 V 503" fill="none" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowcyan)"/>
-        <path d="M 900 486 V 503" fill="none" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#arrowcyan)"/>
-        <text x="906" y="455" fill="#94a3b8" font-size="8">routing per Host()</text>
-
-        <!-- frontend -> api (INTERNAL_API_URL) -->
-        <path d="M 490 583 V 592 H 900 V 583" fill="none" stroke="#34d399" stroke-width="1.5"/>
-        <path d="M 541 592 V 598" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowemerald)"/>
-        <text x="398" y="590" fill="#94a3b8" font-size="8">http://api:3000</text>
-
-        <!-- api -> postgres -->
-        <path d="M 470 677 V 691" fill="none" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrowviolet)"/>
-        <text x="474" y="692" fill="#94a3b8" font-size="8">DATABASE_URL</text>
-
-        <!-- api -> seaweedfs -->
-        <path d="M 640 677 V 691" fill="none" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrowviolet)"/>
-        <text x="648" y="686" fill="#94a3b8" font-size="8">http://seaweedfs:8333</text>
-
-        <!-- worker -> postgres -->
-        <path d="M 860 677 V 684 H 520 V 691" fill="none" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#arrowviolet)"/>
-
-        <!-- External: Traefik -> Let's Encrypt (ACME) -->
-        <path d="M 1030 340 H 1050 V 67 H 1057" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowrose)"/>
-        <!-- External: api -> Google OAuth -->
-        <path d="M 1030 390 H 1044 V 137 H 1057" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowrose)"/>
-        <!-- External: kubelet -> GHCR (image pull) -->
-        <path d="M 1030 990 H 1054 V 207 H 1057" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#arrowrose)"/>
-
-        <!-- ============ TOP: ACTOR + HOST EDGE ============ -->
-        <rect x="60" y="60" width="170" height="58" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
-        <text x="145" y="84" fill="white" font-size="11" font-weight="600" text-anchor="middle">Users</text>
-        <text x="145" y="100" fill="#94a3b8" font-size="9" text-anchor="middle">Browser / dashboard</text>
-
-        <rect x="60" y="150" width="380" height="80" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
-        <text x="74" y="172" fill="white" font-size="11" font-weight="600">Host publik 187.77.112.39</text>
-        <text x="74" y="190" fill="#94a3b8" font-size="9">2 VM Ubuntu 24.04 · 2 vCPU / 8 GB / node</text>
-        <text x="74" y="204" fill="#94a3b8" font-size="9">wg0 WireGuard 10.10.10.0/24 (IP node)</text>
-        <text x="74" y="218" fill="#fb7185" font-size="8">Service traefik LoadBalancer masih EXTERNAL-IP &lt;pending&gt;</text>
-
-        <!-- ============ CLUSTER BOUNDARY ============ -->
-        <rect x="40" y="260" width="1000" height="820" rx="12" fill="rgba(251, 191, 36, 0.03)" stroke="#fbbf24" stroke-width="1" stroke-dasharray="8,4"/>
-        <text x="56" y="280" fill="#fbbf24" font-size="10" font-weight="600">KUBERNETES CLUSTER — kubeadm v1.36.4 · containerd 2.2.1 · pod 192.168.0.0/16 · svc 10.96.0.0/12 · usia 36d</text>
-
-        <!-- ---- INGRESS LAYER ---- -->
-        <rect x="60" y="285" width="960" height="145" rx="8" fill="none" stroke="#22d3ee" stroke-width="1" stroke-dasharray="4,4"/>
-        <text x="76" y="303" fill="#22d3ee" font-size="9" font-weight="600">ingress layer — namespace traefik-system · pod berjalan di k8s-worker</text>
-
-        <rect x="78" y="315" width="290" height="100" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
-        <text x="223" y="338" fill="white" font-size="11" font-weight="600" text-anchor="middle">Traefik v3.7.12</text>
-        <text x="90" y="358" fill="#94a3b8" font-size="8">• entrypoints: web:8000 → redirect :443</text>
-        <text x="90" y="373" fill="#94a3b8" font-size="8">• websecure:8443 · metrics:9100</text>
-        <text x="90" y="388" fill="#94a3b8" font-size="8">• ACME Let's Encrypt (certResolver: le)</text>
-        <text x="90" y="403" fill="#94a3b8" font-size="8">• Helm release v2 · PVC /data/acme.json</text>
-
-        <rect x="382" y="315" width="310" height="100" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
-        <text x="537" y="338" fill="white" font-size="11" font-weight="600" text-anchor="middle">IngressRoute (CRD, 4 rute)</text>
-        <text x="394" y="358" fill="#94a3b8" font-size="8">• development-api.kmtxpumit.my.id</text>
-        <text x="394" y="373" fill="#94a3b8" font-size="8">• development.kmtxpumit.my.id</text>
-        <text x="394" y="388" fill="#94a3b8" font-size="8">• development-ops / -vendor .kmtxpumit.my.id</text>
-        <text x="394" y="403" fill="#94a3b8" font-size="8">• provider: kubernetescrd · IngressClass default</text>
-
-        <rect x="706" y="315" width="296" height="100" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
-        <text x="854" y="338" fill="white" font-size="11" font-weight="600" text-anchor="middle">Middleware &amp; transport</text>
-        <text x="718" y="358" fill="#94a3b8" font-size="8">• cors-kmtxpumit (whitelist 3 origin)</text>
-        <text x="718" y="373" fill="#94a3b8" font-size="8">• timeout-kmtxpumit (ServerTransport)</text>
-        <text x="718" y="388" fill="#94a3b8" font-size="8">• TLS terminate di ingress (ACME)</text>
-        <text x="718" y="403" fill="#fb7185" font-size="8">• hanya rute api yang pakai CORS</text>
-
-        <!-- ---- K8S-MASTER ---- -->
-        <rect x="60" y="460" width="290" height="440" rx="10" fill="none" stroke="#fbbf24" stroke-width="1" stroke-dasharray="8,4"/>
-        <text x="74" y="481" fill="#fbbf24" font-size="9" font-weight="600">k8s-master · control-plane · taint NoSchedule</text>
-
-        <rect x="74" y="498" width="262" height="132" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
-        <text x="205" y="520" fill="white" font-size="11" font-weight="600" text-anchor="middle">Control plane (static pod)</text>
-        <text x="86" y="540" fill="#94a3b8" font-size="8">• kube-apiserver :6443</text>
-        <text x="86" y="555" fill="#94a3b8" font-size="8">• etcd (single node, /var/lib/etcd)</text>
-        <text x="86" y="570" fill="#94a3b8" font-size="8">• kube-controller-manager</text>
-        <text x="86" y="585" fill="#94a3b8" font-size="8">• kube-scheduler</text>
-        <text x="86" y="600" fill="#94a3b8" font-size="8">• authZ Node,RBAC · NodeRestriction</text>
-        <text x="86" y="618" fill="#fb7185" font-size="8">• tanpa audit log · tanpa enkripsi at-rest</text>
-
-        <rect x="74" y="644" width="262" height="112" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
-        <text x="205" y="666" fill="white" font-size="11" font-weight="600" text-anchor="middle">Node agent</text>
-        <text x="86" y="686" fill="#94a3b8" font-size="8">• kubelet (webhook authZ, rotateCerts)</text>
-        <text x="86" y="701" fill="#94a3b8" font-size="8">• containerd 2.2.1 · cgroup systemd</text>
-        <text x="86" y="716" fill="#94a3b8" font-size="8">• kube-proxy (mode iptables)</text>
-        <text x="86" y="731" fill="#94a3b8" font-size="8">• calico-node + csi-node-driver</text>
-        <text x="86" y="746" fill="#94a3b8" font-size="8">• staticPodPath /etc/kubernetes/manifests</text>
-
-        <rect x="74" y="770" width="262" height="112" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
-        <text x="205" y="792" fill="white" font-size="11" font-weight="600" text-anchor="middle">Titik kegagalan tunggal</text>
-        <text x="86" y="812" fill="#94a3b8" font-size="8">• 1 control plane · 1 etcd lokal</text>
-        <text x="86" y="827" fill="#94a3b8" font-size="8">• tanpa snapshot etcd terjadwal</text>
-        <text x="86" y="842" fill="#94a3b8" font-size="8">• tidak menjalankan workload aplikasi</text>
-        <text x="86" y="857" fill="#94a3b8" font-size="8">• master mati = klaster tidak bisa diubah</text>
-        <text x="86" y="872" fill="#94a3b8" font-size="8">  (pod yang sudah jalan tetap hidup)</text>
-
-        <!-- ---- K8S-WORKER ---- -->
-        <rect x="370" y="460" width="650" height="440" rx="10" fill="none" stroke="#fbbf24" stroke-width="1" stroke-dasharray="8,4"/>
-        <text x="384" y="481" fill="#fbbf24" font-size="9" font-weight="600">k8s-worker · SEMUA workload aplikasi ada di sini</text>
-
-        <rect x="384" y="490" width="622" height="396" rx="8" fill="none" stroke="#34d399" stroke-width="1" stroke-dasharray="4,4"/>
-
-        <!-- frontend row -->
-        <rect x="398" y="506" width="184" height="76" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
-        <text x="490" y="528" fill="white" font-size="11" font-weight="600" text-anchor="middle">marketplace</text>
-        <text x="490" y="546" fill="#94a3b8" font-size="8" text-anchor="middle">svc :80 → :8080</text>
-        <text x="490" y="562" fill="#94a3b8" font-size="8" text-anchor="middle">image …-marketplace:development</text>
-
-        <rect x="603" y="506" width="184" height="76" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
-        <text x="695" y="528" fill="white" font-size="11" font-weight="600" text-anchor="middle">ops</text>
-        <text x="695" y="546" fill="#94a3b8" font-size="8" text-anchor="middle">svc :80 → :8080</text>
-        <text x="695" y="562" fill="#94a3b8" font-size="8" text-anchor="middle">image …-ops:development</text>
-
-        <rect x="808" y="506" width="184" height="76" rx="6" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1.5"/>
-        <text x="900" y="528" fill="white" font-size="11" font-weight="600" text-anchor="middle">vendor</text>
-        <text x="900" y="546" fill="#94a3b8" font-size="8" text-anchor="middle">svc :80 → :8080</text>
-        <text x="900" y="562" fill="#94a3b8" font-size="8" text-anchor="middle">image …-vendor:development</text>
-
-        <!-- backend row -->
-        <rect x="398" y="600" width="286" height="76" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
-        <text x="541" y="622" fill="white" font-size="11" font-weight="600" text-anchor="middle">api</text>
-        <text x="541" y="640" fill="#94a3b8" font-size="8" text-anchor="middle">svc :3000 · liveness + readiness</text>
-        <text x="541" y="656" fill="#94a3b8" font-size="8" text-anchor="middle">PVC artifacts 2Gi → /data</text>
-
-        <rect x="706" y="600" width="286" height="76" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
-        <text x="849" y="622" fill="white" font-size="11" font-weight="600" text-anchor="middle">worker (queue/async)</text>
-        <text x="849" y="640" fill="#94a3b8" font-size="8" text-anchor="middle">tanpa probe · PVC artifacts 2Gi</text>
-        <text x="849" y="656" fill="#94a3b8" font-size="8" text-anchor="middle">DATABASE_URL + SERVICE_TOKEN</text>
-
-        <!-- data row -->
-        <rect x="398" y="694" width="184" height="76" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
-        <text x="490" y="716" fill="white" font-size="11" font-weight="600" text-anchor="middle">postgres-0</text>
-        <text x="490" y="734" fill="#94a3b8" font-size="8" text-anchor="middle">StatefulSet · 16-alpine</text>
-        <text x="490" y="750" fill="#94a3b8" font-size="8" text-anchor="middle">headless svc :5432 · 5Gi</text>
-
-        <rect x="603" y="694" width="184" height="76" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
-        <text x="695" y="716" fill="white" font-size="11" font-weight="600" text-anchor="middle">seaweedfs-0</text>
-        <text x="695" y="734" fill="#94a3b8" font-size="8" text-anchor="middle">StatefulSet · 3.68 (S3)</text>
-        <text x="695" y="750" fill="#94a3b8" font-size="8" text-anchor="middle">headless svc :8333 · 5Gi</text>
-
-        <rect x="808" y="694" width="184" height="76" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
-        <text x="900" y="716" fill="white" font-size="11" font-weight="600" text-anchor="middle">hermes-agent</text>
-        <text x="900" y="734" fill="#94a3b8" font-size="8" text-anchor="middle">nousresearch v2026.9.7</text>
-        <text x="900" y="750" fill="#fb7185" font-size="8" text-anchor="middle">SA-nya = cluster-admin ⚠</text>
-
-        <!-- ns notes -->
-        <text x="398" y="790" fill="#94a3b8" font-size="8">PVC local-path (RWO, reclaim Delete): pgdata 5Gi · seaweed-data 5Gi · artifacts 2Gi · hermes-agent-data 2Gi</text>
-        <text x="398" y="812" fill="#94a3b8" font-size="8">ConfigMap kmtxpumit-config (21 key) · Secret kmtxpumit-secrets · imagePullSecret ghcr-pull</text>
-        <text x="398" y="830" fill="#94a3b8" font-size="8">http://api:3000 (INTERNAL_API_URL) · http://seaweedfs:8333 (STORAGE_ENDPOINT)</text>
-        <text x="398" y="852" fill="#fb7185" font-size="8">namespace kmtxpumit-development — semua Deployment/StatefulSet replicas: 1 · tanpa HPA / PDB / NetworkPolicy / quota</text>
-        <text x="398" y="870" fill="#fb7185" font-size="8">pod aplikasi tanpa securityContext (jalan sebagai root) · AUTH_LUAR_DEV=1 · tag image :development</text>
-
-        <!-- ---- PLATFORM STRIP ---- -->
-        <rect x="60" y="920" width="960" height="130" rx="8" fill="none" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4,4"/>
-        <text x="76" y="938" fill="#fbbf24" font-size="9" font-weight="600">platform &amp; addons — cluster-wide (Calico dikelola Tigera Operator, bukan manifest statis)</text>
-
-        <rect x="78" y="950" width="222" height="84" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
-        <text x="189" y="970" fill="white" font-size="10" font-weight="600" text-anchor="middle">Calico CNI v3.32.1</text>
-        <text x="88" y="988" fill="#94a3b8" font-size="8">• VXLAN encap · iptables dataplane</text>
-        <text x="88" y="1002" fill="#94a3b8" font-size="8">• IP pool 192.168.0.0/16 (block /26)</text>
-        <text x="88" y="1016" fill="#94a3b8" font-size="8">• calico-typha 1 replika + PDB</text>
-        <text x="88" y="1030" fill="#fb7185" font-size="8">• 0 NetworkPolicy (jaringan datar)</text>
-
-        <rect x="312" y="950" width="222" height="84" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
-        <text x="423" y="970" fill="white" font-size="10" font-weight="600" text-anchor="middle">CoreDNS 1.14.2</text>
-        <text x="322" y="988" fill="#94a3b8" font-size="8">• 2 replika · podAntiAffinity</text>
-        <text x="322" y="1002" fill="#94a3b8" font-size="8">• cache 30 · prometheus :9153</text>
-        <text x="322" y="1016" fill="#94a3b8" font-size="8">• readOnlyRootFilesystem ✓</text>
-        <text x="322" y="1030" fill="#94a3b8" font-size="8">• keduanya di k8s-worker</text>
-
-        <rect x="546" y="950" width="222" height="84" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
-        <text x="657" y="970" fill="white" font-size="10" font-weight="600" text-anchor="middle">local-path-provisioner</text>
-        <text x="556" y="988" fill="#94a3b8" font-size="8">• StorageClass local-path (default)</text>
-        <text x="556" y="1002" fill="#94a3b8" font-size="8">• WaitForFirstConsumer · Delete</text>
-        <text x="556" y="1016" fill="#94a3b8" font-size="8">• path node /opt/local-path-provisioner</text>
-        <text x="556" y="1030" fill="#fb7185" font-size="8">• disk lokal node, bukan shared</text>
-
-        <rect x="780" y="950" width="222" height="84" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
-        <text x="891" y="970" fill="white" font-size="10" font-weight="600" text-anchor="middle">kube-proxy · CSI · operator</text>
-        <text x="790" y="988" fill="#94a3b8" font-size="8">• kube-proxy DaemonSet (iptables)</text>
-        <text x="790" y="1002" fill="#94a3b8" font-size="8">• csi-node-driver (Calico CSI)</text>
-        <text x="790" y="1016" fill="#94a3b8" font-size="8">• tigera-operator v1.42.3</text>
-        <text x="790" y="1030" fill="#fb7185" font-size="8">• tanpa metrics-server</text>
-
-        <!-- ============ EXTERNAL COLUMN ============ -->
-        <rect x="1060" y="40" width="200" height="54" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
-        <text x="1160" y="62" fill="white" font-size="11" font-weight="600" text-anchor="middle">Let's Encrypt</text>
-        <text x="1160" y="80" fill="#94a3b8" font-size="9" text-anchor="middle">ACME HTTP-01</text>
-
-        <rect x="1060" y="110" width="200" height="54" rx="6" fill="rgba(136, 19, 55, 0.4)" stroke="#fb7185" stroke-width="1.5"/>
-        <text x="1160" y="132" fill="white" font-size="11" font-weight="600" text-anchor="middle">Google OAuth</text>
-        <text x="1160" y="150" fill="#94a3b8" font-size="9" text-anchor="middle">client secret (login eksternal)</text>
-
-        <rect x="1060" y="180" width="200" height="54" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
-        <text x="1160" y="202" fill="white" font-size="11" font-weight="600" text-anchor="middle">GHCR</text>
-        <text x="1160" y="220" fill="#94a3b8" font-size="9" text-anchor="middle">ghcr.io/pt-sagung-…</text>
-
-        <!-- ============ LEGEND (di luar semua boundary) ============ -->
-        <text x="60" y="1112" fill="white" font-size="10" font-weight="600">Legend</text>
-
-        <rect x="60" y="1126" width="16" height="10" rx="2" fill="rgba(8, 51, 68, 0.4)" stroke="#22d3ee" stroke-width="1"/>
-        <text x="84" y="1134" fill="#94a3b8" font-size="8">Frontend / ingress</text>
-
-        <rect x="60" y="1144" width="16" height="10" rx="2" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1"/>
-        <text x="84" y="1152" fill="#94a3b8" font-size="8">Backend / service</text>
-
-        <rect x="60" y="1162" width="16" height="10" rx="2" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1"/>
-        <text x="84" y="1170" fill="#94a3b8" font-size="8">Database / storage</text>
-
-        <rect x="300" y="1126" width="16" height="10" rx="2" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1"/>
-        <text x="324" y="1134" fill="#94a3b8" font-size="8">Platform / infra node</text>
-
-        <rect x="300" y="1144" width="16" height="10" rx="2" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1"/>
-        <text x="324" y="1152" fill="#94a3b8" font-size="8">Eksternal / tooling</text>
-
-        <line x1="300" y1="1167" x2="316" y2="1167" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="3,3"/>
-        <text x="324" y="1170" fill="#94a3b8" font-size="8">Alur keluar (ACME, OAuth, pull image)</text>
-
-        <rect x="560" y="1126" width="16" height="10" rx="2" fill="transparent" stroke="#fbbf24" stroke-width="1" stroke-dasharray="3,3"/>
-        <text x="584" y="1134" fill="#94a3b8" font-size="8">Batas klaster / node</text>
-
-        <rect x="560" y="1144" width="16" height="10" rx="2" fill="transparent" stroke="#34d399" stroke-width="1" stroke-dasharray="3,3"/>
-        <text x="584" y="1152" fill="#94a3b8" font-size="8">Batas namespace aplikasi</text>
-      </svg>
-    </div>
-
-    <!-- ================= DIAGRAM 2: TARGET ================= -->
-    <p class="section-label">2 — Target yang disarankan (to-be): GitOps + IaC + observability</p>
-    <div class="diagram-container">
-      <svg viewBox="0 0 1280 790">
-        <defs>
-          <marker id="a2grey" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
-          </marker>
-          <marker id="a2cyan" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#22d3ee" />
-          </marker>
-          <marker id="a2emerald" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#34d399" />
-          </marker>
-          <marker id="a2amber" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-            <polygon points="0 0, 10 3.5, 0 7" fill="#fbbf24" />
-          </marker>
-          <pattern id="grid2" width="40" height="40" patternUnits="userSpaceOnUse">
-            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" stroke-width="0.5"/>
-          </pattern>
-        </defs>
-
-        <rect width="100%" height="100%" fill="url(#grid2)" />
-
-        <!-- arrows first -->
-        <line x1="232" y1="155" x2="266" y2="155" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#a2cyan)"/>
-        <text x="249" y="148" fill="#94a3b8" font-size="8" text-anchor="middle">push/PR</text>
-
-        <line x1="472" y1="155" x2="506" y2="155" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#a2cyan)"/>
-        <text x="489" y="148" fill="#94a3b8" font-size="8" text-anchor="middle">trigger</text>
-
-        <line x1="732" y1="155" x2="766" y2="155" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#a2cyan)"/>
-        <text x="749" y="148" fill="#94a3b8" font-size="8" text-anchor="middle">push</text>
-
-        <line x1="952" y1="155" x2="986" y2="155" stroke="#22d3ee" stroke-width="1.5" marker-end="url(#a2cyan)"/>
-        <text x="969" y="148" fill="#94a3b8" font-size="8" text-anchor="middle">watch</text>
-
-        <!-- GitOps loop: Actions commits manifest back to Git -->
-        <path d="M 620 212 V 252 H 370 V 214" fill="none" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="5,5" marker-end="url(#a2grey)"/>
-        <text x="495" y="266" fill="#fb7185" font-size="8" text-anchor="middle">commit manifest (image digest) → Git, bukan kubectl apply</text>
-
-        <!-- Argo CD -> cluster -->
-        <path d="M 1110 212 V 556" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#a2emerald)"/>
-        <text x="1120" y="400" fill="#94a3b8" font-size="8">sync / reconcile</text>
-
-        <!-- Ansible -> cluster -->
-        <path d="M 520 472 V 556" fill="none" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#a2amber)"/>
-        <text x="530" y="520" fill="#94a3b8" font-size="8">bootstrap node</text>
-
-        <line x1="340" y1="410" x2="366" y2="410" stroke="#fbbf24" stroke-width="1.5" marker-end="url(#a2amber)"/>
-        <text x="353" y="403" fill="#94a3b8" font-size="8" text-anchor="middle">inventory</text>
-
-        <!-- LANE A -->
-        <rect x="40" y="40" width="1200" height="240" rx="12" fill="rgba(34, 211, 238, 0.03)" stroke="#22d3ee" stroke-width="1" stroke-dasharray="8,4"/>
-        <text x="56" y="60" fill="#22d3ee" font-size="10" font-weight="600">LANE A — aplikasi: source → CI → registry → CD (GitOps, tanpa kubectl manual)</text>
-
-        <rect x="50" y="100" width="182" height="112" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
-        <text x="141" y="124" fill="white" font-size="11" font-weight="600" text-anchor="middle">Developer</text>
-        <text x="60" y="146" fill="#94a3b8" font-size="8">• branch + pull request</text>
-        <text x="60" y="161" fill="#94a3b8" font-size="8">• review, bukan apply</text>
-        <text x="60" y="176" fill="#94a3b8" font-size="8">• commit = satu-satunya</text>
-        <text x="60" y="191" fill="#94a3b8" font-size="8">  cara mengubah produksi</text>
-
-        <rect x="270" y="100" width="202" height="112" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
-        <text x="371" y="124" fill="white" font-size="11" font-weight="600" text-anchor="middle">Git repo (GitHub)</text>
-        <text x="280" y="146" fill="#94a3b8" font-size="8">• main = kode aplikasi</text>
-        <text x="280" y="161" fill="#94a3b8" font-size="8">• /deploy = manifest K8s</text>
-        <text x="280" y="176" fill="#94a3b8" font-size="8">• Kustomize overlay dev/prod</text>
-        <text x="280" y="191" fill="#94a3b8" font-size="8">• branch protection + CODEOWNERS</text>
-
-        <rect x="510" y="100" width="220" height="112" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
-        <text x="620" y="124" fill="white" font-size="11" font-weight="600" text-anchor="middle">GitHub Actions</text>
-        <text x="520" y="146" fill="#94a3b8" font-size="8">• lint · unit test · build</text>
-        <text x="520" y="161" fill="#94a3b8" font-size="8">• Trivy scan (fail on HIGH)</text>
-        <text x="520" y="176" fill="#94a3b8" font-size="8">• SBOM + cosign sign</text>
-        <text x="520" y="191" fill="#94a3b8" font-size="8">• push GHCR by digest</text>
-
-        <rect x="770" y="100" width="182" height="112" rx="6" fill="rgba(30, 41, 59, 0.5)" stroke="#94a3b8" stroke-width="1.5"/>
-        <text x="861" y="124" fill="white" font-size="11" font-weight="600" text-anchor="middle">GHCR</text>
-        <text x="780" y="146" fill="#94a3b8" font-size="8">• tag immutable + digest</text>
-        <text x="780" y="161" fill="#94a3b8" font-size="8">• ganti :development</text>
-        <text x="780" y="176" fill="#94a3b8" font-size="8">• retention policy</text>
-        <text x="780" y="191" fill="#94a3b8" font-size="8">• pull secret per namespace</text>
-
-        <rect x="990" y="100" width="240" height="112" rx="6" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1.5"/>
-        <text x="1110" y="124" fill="white" font-size="11" font-weight="600" text-anchor="middle">Argo CD</text>
-        <text x="1000" y="146" fill="#94a3b8" font-size="8">• watch repo /deploy (auto-sync)</text>
-        <text x="1000" y="161" fill="#94a3b8" font-size="8">• deteksi drift + rollback</text>
-        <text x="1000" y="176" fill="#94a3b8" font-size="8">• ApplicationSet per environment</text>
-        <text x="1000" y="191" fill="#94a3b8" font-size="8">• Argo Rollouts (canary/blue-green)</text>
-
-        <!-- LANE B -->
-        <rect x="40" y="320" width="650" height="190" rx="12" fill="rgba(251, 191, 36, 0.03)" stroke="#fbbf24" stroke-width="1" stroke-dasharray="8,4"/>
-        <text x="56" y="340" fill="#fbbf24" font-size="10" font-weight="600">LANE B — infrastruktur sebagai kode (dari "setup manual" ke reproducibility)</text>
-
-        <rect x="60" y="350" width="280" height="120" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
-        <text x="200" y="374" fill="white" font-size="11" font-weight="600" text-anchor="middle">Terraform</text>
-        <text x="72" y="396" fill="#94a3b8" font-size="8">• provision VM/VPS, volume, snapshot</text>
-        <text x="72" y="411" fill="#94a3b8" font-size="8">• WireGuard wg0 + firewall rule</text>
-        <text x="72" y="426" fill="#94a3b8" font-size="8">• DNS record (api / ops / vendor / dev)</text>
-        <text x="72" y="441" fill="#94a3b8" font-size="8">• remote state (S3/MinIO seaweedfs)</text>
-        <text x="72" y="456" fill="#94a3b8" font-size="8">• tls/ssh key material, bukan manual</text>
-
-        <rect x="370" y="350" width="300" height="120" rx="6" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1.5"/>
-        <text x="520" y="374" fill="white" font-size="11" font-weight="600" text-anchor="middle">Ansible</text>
-        <text x="382" y="396" fill="#94a3b8" font-size="8">• kubeadm init / join (idempoten)</text>
-        <text x="382" y="411" fill="#94a3b8" font-size="8">• containerd, cgroups, kernel module</text>
-        <text x="382" y="426" fill="#94a3b8" font-size="8">• harden node (sysctl, firewall, user)</text>
-        <text x="382" y="441" fill="#94a3b8" font-size="8">• install Calico / Traefik / storage</text>
-        <text x="382" y="456" fill="#94a3b8" font-size="8">• jadi "runbook hidup" yang bisa diuji ulang</text>
-
-        <!-- LANE C -->
-        <rect x="710" y="320" width="290" height="190" rx="12" fill="rgba(76, 29, 149, 0.1)" stroke="#a78bfa" stroke-width="1" stroke-dasharray="8,4"/>
-        <text x="726" y="340" fill="#a78bfa" font-size="10" font-weight="600">LANE C — observability &amp; scaling</text>
-
-        <rect x="726" y="350" width="258" height="120" rx="6" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1.5"/>
-        <text x="855" y="372" fill="white" font-size="10" font-weight="600" text-anchor="middle">metrik, log, alert</text>
-        <text x="738" y="394" fill="#94a3b8" font-size="8">• metrics-server → kubectl top + HPA</text>
-        <text x="738" y="409" fill="#94a3b8" font-size="8">• kube-prometheus-stack + Grafana</text>
-        <text x="738" y="424" fill="#94a3b8" font-size="8">• Loki/Vector untuk log container</text>
-        <text x="738" y="439" fill="#94a3b8" font-size="8">• alertmanager → Telegram/Slack</text>
-        <text x="738" y="454" fill="#94a3b8" font-size="8">• dashboard SLO: error rate, latency</text>
-
-        <!-- TARGET CLUSTER -->
-        <rect x="50" y="558" width="1180" height="122" rx="10" fill="rgba(251, 191, 36, 0.05)" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="8,4"/>
-        <text x="66" y="580" fill="#fbbf24" font-size="10" font-weight="600">TARGET CLUSTER — perbaikan wajib sebelum menambah lapisan baru</text>
-        <text x="66" y="602" fill="#94a3b8" font-size="9">• backup etcd terjadwal (CronJob snapshot → object storage) + uji restore — ini yang paling mendesak</text>
-        <text x="66" y="620" fill="#94a3b8" font-size="9">• RBAC: SA hermes-agent diturunkan dari cluster-admin ke Role spesifik · PSA restricted + NetworkPolicy default-deny</text>
-        <text x="66" y="638" fill="#94a3b8" font-size="9">• replicas ≥ 2 + PDB + podAntiAffinity · secret terenkripsi at-rest · audit log apiserver aktif</text>
-        <text x="66" y="656" fill="#94a3b8" font-size="9">• secret dari Sealed Secrets / External Secrets + SOPS (bukan file .env atau kubectl create secret manual)</text>
-        <text x="66" y="674" fill="#94a3b8" font-size="9">• opsional: 3 control plane HA + HAProxy/VIP, MetalLB untuk menggantikan LoadBalancer &lt;pending&gt;</text>
-
-        <!-- LEGEND 2 -->
-        <rect x="60" y="706" width="16" height="10" rx="2" fill="rgba(6, 78, 59, 0.4)" stroke="#34d399" stroke-width="1"/>
-        <text x="84" y="714" fill="#94a3b8" font-size="8">Komponen baru / diubah</text>
-        <rect x="300" y="706" width="16" height="10" rx="2" fill="rgba(120, 53, 15, 0.3)" stroke="#fbbf24" stroke-width="1"/>
-        <text x="324" y="714" fill="#94a3b8" font-size="8">Infrastruktur sebagai kode</text>
-        <rect x="540" y="706" width="16" height="10" rx="2" fill="rgba(76, 29, 149, 0.4)" stroke="#a78bfa" stroke-width="1"/>
-        <text x="564" y="714" fill="#94a3b8" font-size="8">Observability</text>
-        <line x1="740" y1="711" x2="756" y2="711" stroke="#fb7185" stroke-width="1.5" stroke-dasharray="3,3"/>
-        <text x="764" y="714" fill="#94a3b8" font-size="8">Umpan balik GitOps (manifest, bukan kubectl)</text>
-      </svg>
-    </div>
-
-    <!-- ================= CARDS ================= -->
-    <div class="cards">
-      <div class="card">
-        <div class="card-header">
-          <div class="card-dot emerald"></div>
-          <h3>Yang sudah benar</h3>
-        </div>
-        <ul>
-          <li>• RBAC + Node authorization, admission NodeRestriction</li>
-          <li>• kubelet: anonymous auth off, authZ Webhook, rotateCertificates</li>
-          <li>• etcd TLS penuh + client/peer cert auth</li>
-          <li>• Calico dikelola operator (bukan manifest statis), typha punya PDB</li>
-          <li>• CoreDNS 2 replika + anti-affinity, readOnlyRootFilesystem</li>
-          <li>• ConfigMap untuk config, Secret untuk kredensial (tidak hardcoded)</li>
-          <li>• TLS otomatis Let's Encrypt + CORS middleware</li>
-          <li>• CoreDNS &amp; Traefik sudah drop ALL capability + seccomp</li>
-        </ul>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <div class="card-dot rose"></div>
-          <h3>Keamanan — prioritas 1</h3>
-        </div>
-        <ul>
-          <li>• SA <code>hermes-agent</code> di-bind ke <strong>cluster-admin</strong>: satu pod = seluruh klaster</li>
-          <li>• 0 NetworkPolicy: semua pod bisa saling akses (network datar)</li>
-          <li>• Namespace tanpa label Pod Security Admission (efektif privileged)</li>
-          <li>• Pod aplikasi tanpa securityContext → jalan sebagai root</li>
-          <li>• Tanpa audit log apiserver: tidak ada jejak siapa mengubah apa</li>
-          <li>• Secret tidak terenkripsi at-rest di etcd</li>
-          <li>• <code>AUTH_LUAR_DEV=1</code> + tag <code>:development</code> di domain publik</li>
-        </ul>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <div class="card-dot amber"></div>
-          <h3>Ketersediaan &amp; risiko</h3>
-        </div>
-        <ul>
-          <li>• 1 control plane + 1 etcd lokal, tanpa snapshot terjadwal</li>
-          <li>• Semua workload di satu node (<code>k8s-worker</code>)</li>
-          <li>• Semua Deployment/StatefulSet <code>replicas: 1</code>, tanpa PDB</li>
-          <li>• Tanpa HPA, tanpa metrics-server → tidak bisa scaling otomatis</li>
-          <li>• Traefik LoadBalancer <code>&lt;pending&gt;</code> → bergantung NodePort</li>
-          <li>• worker: liveness/readiness dan seaweedfs: tanpa probe</li>
-          <li>• Storage node-local (RWO) → pod tidak bisa pindah node bebas</li>
-        </ul>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <div class="card-dot cyan"></div>
-          <h3>Alur trafik produksi</h3>
-        </div>
-        <ul>
-          <li>• Users → host :443/:80 → NodePort 30625/32144</li>
-          <li>• Traefik → IngressRoute (4 Host rules) → Service → Pod</li>
-          <li>• api dipanggil internal via <code>http://api:3000</code></li>
-          <li>• artefak disimpan ke S3 <code>http://seaweedfs:8333</code> (bucket kmtxpumit)</li>
-          <li>• Postgres &amp; SeaweedFS headless service, 1 replika masing-masing</li>
-          <li>• Login eksternal Google OAuth (client secret di Secret)</li>
-        </ul>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <div class="card-dot violet"></div>
-          <h3>Data &amp; backup (belum ada)</h3>
-        </div>
-        <ul>
-          <li>• Postgres 16 single instance, tanpa replika/backup terjadwal</li>
-          <li>• SeaweedFS 1 node (S3) — artefak &amp; bucket kmtxpumit</li>
-          <li>• PVC local-path: hilang jika node/disk rusak (reclaim Delete)</li>
-          <li>• Tanpa Velero / pg_dump CronJob / snapshot etcd</li>
-          <li>• Uji restore belum pernah dilakukan → backup tanpa uji = asumsi</li>
-        </ul>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <div class="card-dot amber"></div>
-          <h3>Peta belajar (urutan yang disarankan)</h3>
-        </div>
-        <ul>
-          <li>• <strong>Fase 0</strong> — backup &amp; restore etcd + Postgres (prasyarat semua fase lain)</li>
-          <li>• <strong>Fase 1</strong> — Git + GitHub Actions: build, test, Trivy, push GHCR (digest)</li>
-          <li>• <strong>Fase 2</strong> — Argo CD: manifest di Git, sync otomatis, hapus kebiasaan <code>kubectl apply</code></li>
-          <li>• <strong>Fase 3</strong> — Ansible (bootstrap node) lalu Terraform (VM, wg0, DNS, state)</li>
-          <li>• <strong>Fase 4</strong> — observability, NetworkPolicy, PSA, RBAC diperkecil</li>
-          <li>• <strong>Fase 5</strong> — HA control plane, managed DB, Velero, MetalLB</li>
-        </ul>
-      </div>
-    </div>
-
-    <!-- Footer -->
-    <p class="footer">
-      KMTPUMIT · kubeadm v1.36.4 · 2 node · 12 Deployment/StatefulSet · 5 PVC · 4 IngressRoute · 0 NetworkPolicy · 0 HPA · 0 ResourceQuota · 1 PDB — data dibaca langsung dari API server (kubectl), 29 Sep 2026
-    </p>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Daftar isi">
+  <div class="sheet-grip"></div>
+  <div class="sheet-head">
+    <b>Daftar isi</b>
+    <em id="sheet-now">00 &middot; Ringkasan</em>
   </div>
+  <div class="sheet-list" id="sheet-list"></div>
+</div>
+
+<nav class="mnav" aria-label="Navigasi dokumen">
+  <div class="mnav-progress"><span id="mnav-progress"></span></div>
+  <div class="mnav-items">
+    <button id="nav-toc" aria-expanded="false" aria-controls="sheet">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+      <span>Daftar isi</span>
+    </button>
+    <button id="nav-mode">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4v16" /><path d="M12 4a8 8 0 010 16" fill="currentColor" stroke="none" opacity=".38"/></svg>
+      <span id="nav-mode-label">Lengkap</span>
+    </button>
+    <button id="nav-gloss">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 015.5 4H10a2 2 0 012 2v13a2 2 0 00-2-2H5.5A1.5 1.5 0 014 15.5z"/><path d="M20 5.5A1.5 1.5 0 0018.5 4H14a2 2 0 00-2 2v13a2 2 0 012-2h4.5a1.5 1.5 0 001.5-1.5z"/></svg>
+      <span>Glosarium</span>
+    </button>
+    <button id="nav-top">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V6"/><path d="M6 11l6-6 6 6"/></svg>
+      <span>Ke atas</span>
+    </button>
+  </div>
+</nav>
+
+<div class="page">
+
+  <nav class="toc" id="toc" aria-label="Daftar isi">
+    <div class="toc-title">Daftar isi</div>
+    <div class="toc-list" id="toc-list">
+    <a href="#ringkasan"><span class="num">00</span>Ringkasan</a>
+    <a href="#platform"><span class="num">01</span>Lapisan platform</a>
+    <a href="#jaringan"><span class="num">02</span>Jaringan cluster</a>
+    <a href="#ci"><span class="num">03</span>Kode ke image</a>
+    <a href="#cd"><span class="num">04</span>Image ke cluster</a>
+    <a href="#routing"><span class="num">05</span>Jalur traffic</a>
+    <a href="#rahasia"><span class="num">06</span>Rahasia &amp; registry</a>
+    <a href="#data"><span class="num">07</span>Data &amp; storage</a>
+    <a href="#akses"><span class="num">08</span>Akses &amp; firewall</a>
+    <a href="#environment"><span class="num">09</span>Dua environment</a>
+    <a href="#repo" class="deep"><span class="num">10</span>Peta berkas</a>
+    <a href="#keamanan"><span class="num">11</span>Keamanan</a>
+    <a href="#glosarium"><span class="num">12</span>Glosarium</a>
+    <a href="#catatan"><span class="num">13</span>Catatan sumber</a>
+    </div>
+  </nav>
+
+  <main class="content">
+
+    <header>
+      <div class="eyebrow"><span class="dot"></span>PT Sagung Wahana Teknologi</div>
+      <h1>Arsitektur Infrastruktur Kmtxpumit</h1>
+      <p class="lede">
+        Dokumen ini menjelaskan bagaimana platform <code>swt-kmtxpumit-platform-fs</code> berjalan:
+        dari kode yang ditulis developer, menjadi image di registry, sampai menjadi pod yang melayani
+        pengguna di atas cluster Kubernetes dua node milik sendiri, termasuk siapa yang boleh
+        mengaksesnya dan apa saja batas yang sudah diketahui.
+      </p>
+      <div class="meta">
+        <span>Kubernetes 1.36 &middot; kubeadm</span>
+        <span>2 node VPS Hostinger</span>
+        <span>WireGuard</span>
+        <span>Calico VXLAN</span>
+        <span>Traefik hostPort</span>
+        <span>GHCR + Kustomize</span>
+        <span>Diverifikasi 2026-09-11</span>
+      </div>
+
+      <div class="switch">
+        <p><strong style="color:var(--text)">Cara baca:</strong> pilih tingkat detail yang Anda butuhkan.</p>
+        <div class="seg" role="group" aria-label="Tingkat detail">
+          <button id="btn-ringkas" aria-pressed="false">Ringkas</button>
+          <button id="btn-lengkap" aria-pressed="true">Lengkap</button>
+        </div>
+        <p id="switch-hint">Mode <b style="color:var(--cyan)">Lengkap</b> menampilkan nama teknis, alamat IP, dan konfigurasi.</p>
+      </div>
+    </header>
+
+    <!-- ============ 00 RINGKASAN ============ -->
+    <section id="ringkasan">
+      <h2><span class="num">00</span>Ringkasan</h2>
+      <p class="sub">Lima kalimat yang menjelaskan seluruh sistem. Sisanya hanya memperdalam bagian ini.</p>
+
+      <div class="plain">
+        <b>Analogi singkat</b>
+        <p>
+          Bayangkan dua gudang sewaan yang berdiri terpisah di kota yang sama. Gudang pertama hanya berisi
+          kantor mandor yang mengatur pekerjaan, gudang kedua yang benar-benar berisi mesin dan barang.
+          Karena keduanya tidak punya jalan pribadi, dibuatlah terowongan tertutup antar keduanya, yaitu
+          WireGuard. Traefik adalah satpam di pintu depan gudang kedua, dan setiap ruangan di dalamnya
+          dipisah menjadi dua kamar terkunci: satu untuk uji coba, satu untuk pengguna sungguhan.
+        </p>
+      </div>
+
+      <ol class="steps">
+        <li><b>Developer mendorong kode</b> ke branch <code>development</code> atau <code>production</code> di GitHub. Tidak ada berkas aplikasi yang diunggah manual ke server.</li>
+        <li><b>GitHub Actions menguji lalu membangun lima image</b> dan mengirimkannya ke GHCR, dengan tag mengikuti nama branch.</li>
+        <li><b>Operator menjalankan <code>kubectl apply</code> sendiri</b> di node master. Tahap ini sengaja tidak diotomatiskan, karena otomasi berarti menyerahkan kunci cluster ke pihak ketiga.</li>
+        <li><b>Kubelet di node worker menarik image</b> dari GHCR dan menjalankannya sebagai pod. Semua beban kerja berada di satu node worker.</li>
+        <li><b>Pengguna masuk lewat Traefik</b> yang mendengarkan langsung di port 80 dan 443 milik node worker, lalu diarahkan ke layanan sesuai nama domain.</li>
+      </ol>
+
+      <div class="grid">
+        <div class="card">
+          <h4>Dua node, satu yang bekerja</h4>
+          <p>Node <b>k8s-master</b> hanya menjalankan control plane. Seluruh pod aplikasi, database, dan
+             Traefik dijadwalkan di <b>k8s-worker</b>.</p>
+        </div>
+        <div class="card c-emerald">
+          <h4>Dua environment, satu cluster</h4>
+          <p>Namespace <b>kmtxpumit-development</b> sudah hidup dan terpakai. Namespace
+             <b>kmtxpumit-production</b> sudah ada di manifest, tetapi belum pernah dijalankan.</p>
+        </div>
+        <div class="card c-rose">
+          <h4>Tanpa High Availability</h4>
+          <p>Hanya ada satu control-plane node. Jika node master mati, seluruh cluster berhenti.
+             Ini keputusan sadar, bukan kelalaian.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 01 PLATFORM ============ -->
+    <section id="platform">
+      <h2><span class="num">01</span>Lapisan platform</h2>
+      <p class="sub">Di mana sebenarnya semua ini berjalan.</p>
+
+      <div class="plain">
+        <b>Bahasa sederhana</b>
+        <p>
+          Tidak ada layanan cloud terkelola di sini. Yang disewa hanya dua mesin virtual kosong dari
+          Hostinger. Di atas keduanya dipasang sendiri sistem operasi, mesin container, lalu Kubernetes,
+          sehingga lapisannya menjadi empat: VPS, Ubuntu, containerd, lalu pod.
+        </p>
+      </div>
+
+      <figure>
+        <div class="scroller d-wide">
+        <svg viewBox="0 0 1160 420" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Diagram dua node: k8s-master berisi komponen control plane, k8s-worker berisi Traefik dan seluruh pod aplikasi, keduanya dihubungkan tunnel WireGuard">
+          <rect x="18" y="16" width="1124" height="388" rx="14" fill="rgba(251,191,36,.05)" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="10,5"/>
+          <text x="40" y="46" fill="#fbbf24" font-family="Inter,sans-serif" font-size="15" font-weight="600">Hostinger VPS &mdash; dua mesin terpisah, tanpa jaringan privat dari provider</text>
+
+          <rect x="44" y="62" width="470" height="322" rx="12" fill="rgba(34,211,238,.05)" stroke="#22d3ee" stroke-width="1.5"/>
+          <text x="66" y="88" fill="#22d3ee" font-family="Inter,sans-serif" font-size="13.5" font-weight="600">k8s-master &middot; Ubuntu 24.04.4 &middot; 2 vCPU &middot; 7.8 GiB</text>
+
+          <g font-family="Inter,sans-serif" font-size="12" text-anchor="middle">
+            <rect x="66" y="102" width="204" height="52" rx="7" fill="rgba(8,51,68,.5)" stroke="#22d3ee" stroke-width="1.3"/>
+            <text x="168" y="126" fill="#fff">kube-apiserver</text><text x="168" y="143" fill="#94a3b8" font-size="10.5">10.10.10.1:6443</text>
+
+            <rect x="288" y="102" width="204" height="52" rx="7" fill="rgba(8,51,68,.5)" stroke="#22d3ee" stroke-width="1.3"/>
+            <text x="390" y="126" fill="#fff">etcd</text><text x="390" y="143" fill="#94a3b8" font-size="10.5">satu-satunya salinan</text>
+
+            <rect x="66" y="166" width="204" height="52" rx="7" fill="rgba(8,51,68,.5)" stroke="#22d3ee" stroke-width="1.3"/>
+            <text x="168" y="190" fill="#fff">kube-scheduler</text><text x="168" y="207" fill="#94a3b8" font-size="10.5">menaruh pod ke node</text>
+
+            <rect x="288" y="166" width="204" height="52" rx="7" fill="rgba(8,51,68,.5)" stroke="#22d3ee" stroke-width="1.3"/>
+            <text x="390" y="190" fill="#fff">controller-manager</text><text x="390" y="207" fill="#94a3b8" font-size="10.5">menjaga jumlah replika</text>
+
+            <rect x="66" y="230" width="426" height="46" rx="7" fill="rgba(148,163,184,.08)" stroke="#94a3b8" stroke-width="1.3"/>
+            <text x="279" y="258" fill="#e2e8f0">kubelet + containerd 2.2.1</text>
+
+            <rect x="66" y="288" width="426" height="46" rx="7" fill="rgba(52,211,153,.1)" stroke="#34d399" stroke-width="1.3"/>
+            <text x="279" y="316" fill="#e2e8f0">calico-node &mdash; jaringan pod</text>
+
+            <text x="279" y="366" fill="#6b7c96" font-size="11">tidak menjalankan pod aplikasi</text>
+          </g>
+
+          <rect x="620" y="62" width="496" height="322" rx="12" fill="rgba(52,211,153,.05)" stroke="#34d399" stroke-width="1.5"/>
+          <text x="642" y="88" fill="#34d399" font-family="Inter,sans-serif" font-size="13.5" font-weight="600">k8s-worker &middot; Ubuntu 24.04.4 &middot; 2 vCPU &middot; 7.8 GiB</text>
+
+          <g font-family="Inter,sans-serif" font-size="12" text-anchor="middle">
+            <rect x="642" y="102" width="452" height="46" rx="7" fill="rgba(120,53,15,.35)" stroke="#fbbf24" stroke-width="1.3"/>
+            <text x="868" y="123" fill="#fff">Traefik</text><text x="868" y="140" fill="#94a3b8" font-size="10.5">hostPort 80 &amp; 443, namespace traefik-system</text>
+
+            <rect x="642" y="158" width="220" height="46" rx="7" fill="rgba(8,51,68,.5)" stroke="#22d3ee" stroke-width="1.3"/>
+            <text x="752" y="179" fill="#fff">api</text><text x="752" y="195" fill="#94a3b8" font-size="10.5">Go, dengar :3000</text>
+
+            <rect x="874" y="158" width="220" height="46" rx="7" fill="rgba(8,51,68,.5)" stroke="#22d3ee" stroke-width="1.3"/>
+            <text x="984" y="179" fill="#fff">worker</text><text x="984" y="195" fill="#94a3b8" font-size="10.5">Go, tanpa Service</text>
+
+            <rect x="642" y="214" width="144" height="46" rx="7" fill="rgba(251,146,60,.28)" stroke="#fb923c" stroke-width="1.3"/>
+            <text x="714" y="235" fill="#fff">marketplace</text><text x="714" y="251" fill="#94a3b8" font-size="10">nginx statis</text>
+
+            <rect x="796" y="214" width="144" height="46" rx="7" fill="rgba(251,146,60,.28)" stroke="#fb923c" stroke-width="1.3"/>
+            <text x="868" y="235" fill="#fff">ops</text><text x="868" y="251" fill="#94a3b8" font-size="10">nginx statis</text>
+
+            <rect x="950" y="214" width="144" height="46" rx="7" fill="rgba(251,146,60,.28)" stroke="#fb923c" stroke-width="1.3"/>
+            <text x="1022" y="235" fill="#fff">vendor</text><text x="1022" y="251" fill="#94a3b8" font-size="10">nginx statis</text>
+
+            <rect x="642" y="270" width="220" height="46" rx="7" fill="rgba(76,29,149,.45)" stroke="#a78bfa" stroke-width="1.3"/>
+            <text x="752" y="291" fill="#fff">postgres</text><text x="752" y="307" fill="#94a3b8" font-size="10.5">StatefulSet + PVC</text>
+
+            <rect x="874" y="270" width="220" height="46" rx="7" fill="rgba(76,29,149,.45)" stroke="#a78bfa" stroke-width="1.3"/>
+            <text x="984" y="291" fill="#fff">seaweedfs</text><text x="984" y="307" fill="#94a3b8" font-size="10.5">penyimpanan berkas</text>
+
+            <rect x="642" y="326" width="452" height="46" rx="7" fill="rgba(148,163,184,.08)" stroke="#94a3b8" stroke-width="1.3"/>
+            <text x="868" y="354" fill="#e2e8f0">kubelet + containerd 2.2.1 + calico-node</text>
+          </g>
+
+          <line x1="514" y1="200" x2="618" y2="200" stroke="#fb7185" stroke-width="2"/>
+          <text x="566" y="186" fill="#fb7185" font-family="Inter,sans-serif" font-size="11" text-anchor="middle">WireGuard</text>
+          <text x="566" y="222" fill="#94a3b8" font-family="JetBrains Mono,monospace" font-size="10" text-anchor="middle">10.10.10.1</text>
+          <text x="566" y="238" fill="#94a3b8" font-family="JetBrains Mono,monospace" font-size="10" text-anchor="middle">10.10.10.2</text>
+        </svg>
+        </div>
+        <div class="d-mobile">
+        <svg viewBox="0 0 360 700" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Diagram versi tegak: k8s-master di atas, k8s-worker di bawah, dihubungkan tunnel WireGuard">
+          <g font-family="Inter,sans-serif">
+            <rect x="6" y="6" width="348" height="688" rx="12" fill="rgba(251,191,36,.05)" stroke="#fbbf24" stroke-width="1.4" stroke-dasharray="9,5"/>
+            <text x="20" y="29" fill="#fbbf24" font-size="12" font-weight="600">Hostinger VPS &mdash; dua mesin</text>
+
+            <rect x="18" y="40" width="324" height="250" rx="10" fill="rgba(34,211,238,.05)" stroke="#22d3ee" stroke-width="1.4"/>
+            <text x="32" y="62" fill="#22d3ee" font-size="12" font-weight="600">k8s-master</text>
+            <text x="32" y="78" fill="#94a3b8" font-size="10">Ubuntu 24.04.4 &middot; 2 vCPU &middot; 7.8 GiB</text>
+            <g text-anchor="middle">
+              <rect x="30" y="88" width="140" height="44" rx="7" fill="rgba(8,51,68,.5)" stroke="#22d3ee" stroke-width="1.2"/>
+              <text x="100" y="108" fill="#fff" font-size="11">kube-apiserver</text><text x="100" y="123" fill="#94a3b8" font-size="9">:6443</text>
+              <rect x="190" y="88" width="140" height="44" rx="7" fill="rgba(8,51,68,.5)" stroke="#22d3ee" stroke-width="1.2"/>
+              <text x="260" y="108" fill="#fff" font-size="11">etcd</text><text x="260" y="123" fill="#94a3b8" font-size="9">satu salinan</text>
+              <rect x="30" y="140" width="140" height="44" rx="7" fill="rgba(8,51,68,.5)" stroke="#22d3ee" stroke-width="1.2"/>
+              <text x="100" y="167" fill="#fff" font-size="11">scheduler</text>
+              <rect x="190" y="140" width="140" height="44" rx="7" fill="rgba(8,51,68,.5)" stroke="#22d3ee" stroke-width="1.2"/>
+              <text x="260" y="167" fill="#fff" font-size="11">controller-mgr</text>
+              <rect x="30" y="192" width="300" height="38" rx="7" fill="rgba(148,163,184,.08)" stroke="#94a3b8" stroke-width="1.2"/>
+              <text x="180" y="216" fill="#e2e8f0" font-size="11">kubelet + containerd</text>
+              <rect x="30" y="238" width="300" height="38" rx="7" fill="rgba(52,211,153,.1)" stroke="#34d399" stroke-width="1.2"/>
+              <text x="180" y="262" fill="#e2e8f0" font-size="11">calico-node</text>
+            </g>
+
+            <line x1="180" y1="290" x2="180" y2="322" stroke="#fb7185" stroke-width="2"/>
+            <text x="192" y="312" fill="#fb7185" font-size="10.5">WireGuard 10.10.10.0/24</text>
+
+            <rect x="18" y="324" width="324" height="352" rx="10" fill="rgba(52,211,153,.05)" stroke="#34d399" stroke-width="1.4"/>
+            <text x="32" y="346" fill="#34d399" font-size="12" font-weight="600">k8s-worker</text>
+            <text x="32" y="362" fill="#94a3b8" font-size="10">semua pod hidup di sini</text>
+            <g text-anchor="middle">
+              <rect x="30" y="372" width="300" height="42" rx="7" fill="rgba(120,53,15,.35)" stroke="#fbbf24" stroke-width="1.2"/>
+              <text x="180" y="390" fill="#fff" font-size="11">Traefik</text><text x="180" y="405" fill="#94a3b8" font-size="9">hostPort 80 &amp; 443</text>
+              <rect x="30" y="422" width="140" height="42" rx="7" fill="rgba(8,51,68,.5)" stroke="#22d3ee" stroke-width="1.2"/>
+              <text x="100" y="448" fill="#fff" font-size="11">api</text>
+              <rect x="190" y="422" width="140" height="42" rx="7" fill="rgba(8,51,68,.5)" stroke="#22d3ee" stroke-width="1.2"/>
+              <text x="260" y="448" fill="#fff" font-size="11">worker</text>
+              <rect x="30" y="472" width="94" height="42" rx="7" fill="rgba(251,146,60,.28)" stroke="#fb923c" stroke-width="1.2"/>
+              <text x="77" y="498" fill="#fff" font-size="10">marketplace</text>
+              <rect x="133" y="472" width="94" height="42" rx="7" fill="rgba(251,146,60,.28)" stroke="#fb923c" stroke-width="1.2"/>
+              <text x="180" y="498" fill="#fff" font-size="10">ops</text>
+              <rect x="236" y="472" width="94" height="42" rx="7" fill="rgba(251,146,60,.28)" stroke="#fb923c" stroke-width="1.2"/>
+              <text x="283" y="498" fill="#fff" font-size="10">vendor</text>
+              <rect x="30" y="522" width="140" height="42" rx="7" fill="rgba(76,29,149,.45)" stroke="#a78bfa" stroke-width="1.2"/>
+              <text x="100" y="548" fill="#fff" font-size="11">postgres</text>
+              <rect x="190" y="522" width="140" height="42" rx="7" fill="rgba(76,29,149,.45)" stroke="#a78bfa" stroke-width="1.2"/>
+              <text x="260" y="548" fill="#fff" font-size="11">seaweedfs</text>
+              <rect x="30" y="572" width="300" height="38" rx="7" fill="rgba(148,163,184,.08)" stroke="#94a3b8" stroke-width="1.2"/>
+              <text x="180" y="596" fill="#e2e8f0" font-size="11">kubelet + containerd</text>
+              <rect x="30" y="618" width="300" height="38" rx="7" fill="rgba(52,211,153,.1)" stroke="#34d399" stroke-width="1.2"/>
+              <text x="180" y="642" fill="#e2e8f0" font-size="11">calico-node</text>
+            </g>
+          </g>
+        </svg>
+        </div>
+        <figcaption>Dua mesin sewaan, satu terowongan privat, dan hanya satu node yang benar-benar menjalankan aplikasi.</figcaption>
+      </figure>
+
+      <div class="grid">
+        <div class="card">
+          <h4>Control plane tunggal</h4>
+          <p>Cluster dinyalakan dengan <code>kubeadm init</code> memakai alamat tunnel, bukan IP publik.
+             Parameter <code>--control-plane-endpoint</code> disiapkan sejak awal agar penambahan node
+             control-plane ketiga nanti tidak perlu membangun ulang cluster dari nol.</p>
+        </div>
+        <div class="card c-emerald">
+          <h4>Beban kerja terpusat</h4>
+          <p>Node master tidak menjalankan pod aplikasi. Akibatnya seluruh kapasitas aplikasi ditanggung
+             satu node worker dengan 2 vCPU dan 7.8 GiB memori.</p>
+        </div>
+        <div class="card c-rose">
+          <h4>Konsekuensi yang diterima</h4>
+          <p>Tanpa node kedua untuk control plane, <b>etcd, API server, dan scheduler adalah titik gagal
+             tunggal</b>. Penambahan node ketiga untuk quorum baru direncanakan, belum dikerjakan.</p>
+        </div>
+      </div>
+
+      <div class="deep">
+        <h3>Spesifikasi kedua node</h3>
+        <div class="tw">
+          <table>
+            <thead><tr><th style="width:200px">Aspek</th><th>k8s-master</th><th>k8s-worker</th></tr></thead>
+            <tbody>
+              <tr><td><b>Provider</b></td><td>Hostinger VPS</td><td>Hostinger VPS</td></tr>
+              <tr><td><b>Sistem operasi</b></td><td class="mono">Ubuntu 24.04.4 LTS</td><td class="mono">Ubuntu 24.04.4 LTS</td></tr>
+              <tr><td><b>CPU dan memori</b></td><td class="mono">2 core &middot; 7.8 GiB</td><td class="mono">2 core &middot; 7.8 GiB</td></tr>
+              <tr><td><b>IP publik</b></td><td class="mono">145.79.10.237</td><td class="mono">187.77.112.39</td></tr>
+              <tr><td><b>IP tunnel</b></td><td class="mono">10.10.10.1/24</td><td class="mono">10.10.10.2/24</td></tr>
+              <tr><td><b>Container runtime</b></td><td class="mono">containerd 2.2.1</td><td class="mono">containerd 2.2.1</td></tr>
+              <tr><td><b>Kubernetes</b></td><td class="mono">kubeadm, kubelet, kubectl 1.36.3</td><td class="mono">kubeadm, kubelet 1.36.3</td></tr>
+              <tr><td><b>Swap</b></td><td class="mono">dimatikan permanen</td><td class="mono">dimatikan permanen</td></tr>
+              <tr><td><b>Jaringan privat provider</b></td><td class="no">Tidak tersedia</td><td class="no">Tidak tersedia</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note">
+          <p><b>Anomali versi yang perlu diingat:</b> saat <code>kubeadm init</code> dijalankan, log menyebut
+          <code>v1.36.4</code> padahal binary yang terpasang <code>v1.36.3</code>. kubeadm mengambil image
+          control-plane stabil terbaru kecuali di-pin dengan <code>--kubernetes-version</code>. Cluster tetap
+          normal, tetapi versi perlu disamakan saat menambah node control-plane berikutnya.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 02 JARINGAN ============ -->
+    <section id="jaringan">
+      <h2><span class="num">02</span>Jaringan cluster</h2>
+      <p class="sub">Bagaimana dua mesin yang hanya punya IP publik bisa menjadi satu cluster yang aman.</p>
+
+      <div class="plain">
+        <b>Bahasa sederhana</b>
+        <p>
+          Provider tidak menyediakan jaringan privat antar VPS, sehingga kalau dibiarkan apa adanya,
+          seluruh percakapan internal cluster akan melewati internet terbuka. Solusinya dua lapis:
+          sebuah terowongan terenkripsi antar node untuk lalu lintas Kubernetes, dan sebuah jaringan
+          internal khusus pod agar setiap pod punya alamat sendiri dan bisa saling dihubungi.
+        </p>
+      </div>
+
+      <h3>Lapisan pertama &mdash; tunnel WireGuard</h3>
+      <p>
+        Seluruh komunikasi antar node, yaitu API server, etcd, kubelet, dan jaringan pod, dilewatkan
+        tunnel WireGuard. IP publik hanya dipakai untuk SSH dan untuk endpoint WireGuard itu sendiri.
+        Cluster dibangun di atas alamat tunnel, bukan alamat publik, sehingga API server tidak pernah
+        terekspos langsung ke internet.
+      </p>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th style="width:220px">Aspek</th><th>Master</th><th>Worker</th></tr></thead>
+          <tbody>
+            <tr><td><b>Alamat tunnel</b></td><td class="mono">10.10.10.1/24</td><td class="mono">10.10.10.2/24</td></tr>
+            <tr><td><b>Port</b></td><td class="mono">51820/udp</td><td class="mono">51820/udp</td></tr>
+            <tr><td><b>Endpoint peer</b></td><td class="mono">187.77.112.39:51820</td><td class="mono">145.79.10.237:51820</td></tr>
+            <tr><td><b>Layanan</b></td><td class="mono">wg-quick@wg0</td><td class="mono">wg-quick@wg0</td></tr>
+            <tr><td><b>Nama di <code>/etc/hosts</code></b></td><td class="mono">k8s-master</td><td class="mono">k8s-worker</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="deep">
+        <div class="block">[Interface]
+Address    = 10.10.10.1/24
+PrivateKey = &lt;tersimpan lokal di /etc/wireguard/privatekey&gt;
+ListenPort = 51820
+
+[Peer]
+PublicKey           = MiPG07bOQtxEVq5VJ2NdVi4xrV1utkLYY3k8cCfZyiU=
+Endpoint            = 187.77.112.39:51820
+AllowedIPs          = 10.10.10.2/32
+PersistentKeepalive = 25</div>
+        <p>Konfigurasi di worker simetris, dengan endpoint dan alamat yang terbalik.
+           Tunnel dinyatakan benar-benar hidup karena <code>wg show</code> menampilkan
+           <i>latest handshake</i> dengan waktu nyata dan transfer dua arah bukan nol, serta
+           ping antar alamat tunnel berjalan tanpa paket hilang.</p>
+      </div>
+
+      <h3>Lapisan kedua &mdash; CNI Calico</h3>
+      <p>
+        Calico dipilih di atas Flannel karena mendukung <code>NetworkPolicy</code> standar Kubernetes,
+        yaitu kemampuan membatasi pod mana boleh menghubungi pod mana. Tanpa itu, klaim bahwa cluster
+        ini layak produksi tidak punya dasar.
+      </p>
+
+      <div class="grid">
+        <div class="card c-emerald">
+          <h4>Calico v3.32.1</h4>
+          <p>Dipasang lewat Tigera Operator. CIDR pod <code>192.168.0.0/16</code>, sama dengan nilai yang
+             diberikan ke <code>kubeadm init</code>.</p>
+        </div>
+        <div class="card c-emerald">
+          <h4>Enkapsulasi VXLAN</h4>
+          <p>Bukan IPIP bawaan. VXLAN dipilih karena lebih kompatibel di lingkungan VPS yang kadang
+             memblokir protokol IPIP.</p>
+        </div>
+        <div class="card c-amber">
+          <h4>calico-apiserver dilewati</h4>
+          <p>Sengaja tidak dipasang. Akibatnya <code>GlobalNetworkPolicy</code> dan <code>Tier</code> tidak
+             tersedia, hanya <code>NetworkPolicy</code> standar, dan itu memang cukup untuk skala dua node.</p>
+        </div>
+      </div>
+
+      <div class="note">
+        <p><b>Sudah dibuktikan, bukan diasumsikan:</b> sebuah pod uji berhasil menghubungi pod nginx sebelum
+        policy dipasang, lalu gagal dengan <i>timeout</i> setelah <code>NetworkPolicy</code> yang membatasi
+        ingress diterapkan. Artinya Calico benar-benar menegakkan aturan, bukan sekadar menerimanya.</p>
+      </div>
+    </section>
+
+    <!-- ============ 03 CI ============ -->
+    <section id="ci">
+      <h2><span class="num">03</span>Dari kode ke image</h2>
+      <p class="sub">Bagian yang berjalan otomatis, sepenuhnya di luar cluster.</p>
+
+      <div class="plain">
+        <b>Bahasa sederhana</b>
+        <p>
+          Node Kubernetes tidak bisa membangun aplikasi dari kode sumber. Ia hanya bisa menarik paket
+          siap jalan dari sebuah gudang. Maka setiap kali kode didorong ke GitHub, GitHub sendiri yang
+          menguji, mengemas, lalu menaruh hasilnya di gudang bernama GHCR.
+        </p>
+      </div>
+
+      <ol class="steps">
+        <li><b>Developer mendorong ke <code>development</code> atau <code>production</code>.</b> Branch <code>master</code> sudah tidak ada, hasil rename pada 2 September 2026, dan <code>production</code> kini menjadi branch default.</li>
+        <li><b>Dua pekerjaan berjalan paralel.</b> Job <i>web</i> menjalankan typecheck, build, dan test untuk tiga aplikasi Svelte beserta paket bersama. Job <i>backend</i> menjalankan build, vet, dan test Go dengan Postgres sungguhan sebagai layanan CI, termasuk menjalankan berkas migrasi.</li>
+        <li><b>Job <i>images</i> menunggu keduanya hijau</b>, lalu menjalankan lima <code>docker build</code> terpisah.</li>
+        <li><b>Lima image dikirim ke GHCR</b> memakai token bawaan GitHub, tanpa perlu token pribadi.</li>
+      </ol>
+
+      <div class="tw">
+        <table>
+          <thead>
+            <tr><th style="width:230px">Image</th><th style="width:230px">Dockerfile</th><th>Isi</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="mono">kmtxpumit-api</td><td class="mono">deploy/api.Dockerfile</td><td>Binary Go dari <code>cmd/api/main.go</code>, basis distroless, mendengarkan port 3000.</td></tr>
+            <tr><td class="mono">kmtxpumit-worker</td><td class="mono">deploy/worker.Dockerfile</td><td>Binary Go dari <code>cmd/worker/main.go</code>, memproses antrean pekerjaan dari tabel database.</td></tr>
+            <tr><td class="mono">kmtxpumit-marketplace</td><td class="mono">deploy/marketplace.Dockerfile</td><td>Hasil build SvelteKit statis, disajikan nginx.</td></tr>
+            <tr><td class="mono">kmtxpumit-ops</td><td class="mono">deploy/ops.Dockerfile</td><td>Pola sama dengan marketplace. Sudah berjalan di cluster, isinya masih kerangka.</td></tr>
+            <tr><td class="mono">kmtxpumit-vendor</td><td class="mono">deploy/vendor.Dockerfile</td><td>Pola sama dengan marketplace, berisi sebelas layar vendor.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Penamaan tag</h3>
+      <ul class="clean">
+        <li>Push ke <b>development</b> menghasilkan tag <code>development</code> yang dipakai overlay, ditambah <code>development-&lt;sha-pendek&gt;</code> untuk menelusuri commit persisnya.</li>
+        <li>Push ke <b>production</b> menghasilkan tag <code>production</code> dan <code>production-&lt;sha-pendek&gt;</code>.</li>
+        <li>Tidak ada lagi tag <code>latest</code> polos, supaya kedua environment tidak pernah berebut satu tag yang sama.</li>
+      </ul>
+
+      <div class="note">
+        <p><b>Yang pernah salah dan sudah diperbaiki:</b> setelah branch <code>master</code> di-rename,
+        berkas CI masih mencocokkan <code>refs/heads/master</code>. Selama beberapa hari, push ke
+        <code>production</code> tidak membangun image sama sekali, sementara statusnya tetap hijau karena
+        langkah build hanya dilewati, bukan gagal.</p>
+      </div>
+
+      <div class="deep">
+        <h3>Alamat API ikut dipanggang ke dalam bundle</h3>
+        <p>
+          Ketiga aplikasi web adalah SPA statis. Nilai <code>VITE_API_BASE</code> dibaca saat build, bukan
+          saat pod berjalan, lalu ikut tertanam di bundle JavaScript. Akibatnya alamat API yang salah
+          tidak bisa diperbaiki lewat variabel lingkungan di Kubernetes, melainkan harus dibangun ulang
+          image-nya.
+        </p>
+        <div class="block">docker build -f deploy/marketplace.Dockerfile \
+  --build-arg VITE_API_BASE=https://development-api.kmtxpumit.my.id \
+  -t ghcr.io/pt-sagung-wahana-teknologi/kmtxpumit-marketplace:development .</div>
+      </div>
+    </section>
+
+    <!-- ============ 04 CD ============ -->
+    <section id="cd">
+      <h2><span class="num">04</span>Dari image ke cluster</h2>
+      <p class="sub">Bagian yang sengaja tetap manual, dan alasannya.</p>
+
+      <div class="plain">
+        <b>Bahasa sederhana</b>
+        <p>
+          Setelah image siap di gudang, tidak ada yang otomatis memasangnya. Operator masuk ke node
+          master, membaca dulu apa yang akan dipasang, baru menjalankan satu perintah pemasangan.
+          Jeda itu disengaja, karena memberi otomasi akses pasang berarti menyerahkan kunci cluster.
+        </p>
+      </div>
+
+      <figure>
+        <div class="scroller d-wide">
+        <svg viewBox="0 0 1160 300" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Diagram alur: git push memicu CI yang menguji dan membangun lima image ke GHCR secara otomatis, lalu operator menjalankan kubectl apply secara manual sehingga kubelet menarik image dan membuat pod">
+          <rect x="12" y="62" width="748" height="180" rx="12" fill="rgba(34,211,238,.04)" stroke="#22d3ee" stroke-width="1.4" stroke-dasharray="9,5"/>
+          <text x="34" y="86" fill="#22d3ee" font-family="Inter,sans-serif" font-size="13" font-weight="600">Otomatis &mdash; GitHub Actions, tidak menyentuh cluster</text>
+
+          <rect x="776" y="62" width="372" height="180" rx="12" fill="rgba(251,191,36,.04)" stroke="#fbbf24" stroke-width="1.4" stroke-dasharray="9,5"/>
+          <text x="798" y="86" fill="#fbbf24" font-family="Inter,sans-serif" font-size="13" font-weight="600">Manual &mdash; diketik di k8s-master</text>
+
+          <g font-family="Inter,sans-serif" text-anchor="middle">
+            <rect x="26" y="110" width="150" height="80" rx="8" fill="rgba(148,163,184,.08)" stroke="#94a3b8" stroke-width="1.3"/>
+            <text x="101" y="142" fill="#fff" font-size="12.5">git push</text>
+            <text x="101" y="162" fill="#94a3b8" font-size="10.5">development</text>
+            <text x="101" y="177" fill="#94a3b8" font-size="10.5">atau production</text>
+
+            <rect x="214" y="110" width="170" height="80" rx="8" fill="rgba(8,51,68,.5)" stroke="#22d3ee" stroke-width="1.3"/>
+            <text x="299" y="140" fill="#fff" font-size="12.5">job web + backend</text>
+            <text x="299" y="160" fill="#94a3b8" font-size="10.5">typecheck, build, test</text>
+            <text x="299" y="175" fill="#94a3b8" font-size="10.5">Postgres sungguhan</text>
+
+            <rect x="424" y="110" width="150" height="80" rx="8" fill="rgba(8,51,68,.5)" stroke="#22d3ee" stroke-width="1.3"/>
+            <text x="499" y="142" fill="#fff" font-size="12.5">job images</text>
+            <text x="499" y="162" fill="#94a3b8" font-size="10.5">lima docker build</text>
+            <text x="499" y="177" fill="#94a3b8" font-size="10.5">menunggu dua job hijau</text>
+
+            <rect x="612" y="110" width="136" height="80" rx="8" fill="rgba(251,146,60,.28)" stroke="#fb923c" stroke-width="1.3"/>
+            <text x="680" y="142" fill="#fff" font-size="12.5">GHCR</text>
+            <text x="680" y="162" fill="#94a3b8" font-size="10.5">registry privat</text>
+            <text x="680" y="177" fill="#94a3b8" font-size="10.5">tag ikut branch</text>
+
+            <rect x="790" y="110" width="170" height="80" rx="8" fill="rgba(120,53,15,.35)" stroke="#fbbf24" stroke-width="1.3"/>
+            <text x="875" y="140" fill="#fff" font-size="12.5">kubectl apply -k</text>
+            <text x="875" y="160" fill="#94a3b8" font-size="10.5">overlays/&lt;env&gt;</text>
+            <text x="875" y="175" fill="#94a3b8" font-size="10.5">didahului dry-run</text>
+
+            <rect x="998" y="110" width="136" height="80" rx="8" fill="rgba(52,211,153,.12)" stroke="#34d399" stroke-width="1.3"/>
+            <text x="1066" y="142" fill="#fff" font-size="12.5">kubelet</text>
+            <text x="1066" y="162" fill="#94a3b8" font-size="10.5">tarik image</text>
+            <text x="1066" y="177" fill="#94a3b8" font-size="10.5">jalankan pod</text>
+          </g>
+
+          <g stroke="#6b7c96" stroke-width="1.5" fill="none">
+            <path d="M176,150 L210,150"/><path d="M202,144 L210,150 L202,156" fill="#6b7c96"/>
+            <path d="M384,150 L420,150"/><path d="M412,144 L420,150 L412,156" fill="#6b7c96"/>
+            <path d="M574,150 L608,150"/><path d="M600,144 L608,150 L600,156" fill="#6b7c96"/>
+            <path d="M748,150 L786,150"/><path d="M778,144 L786,150 L778,156" fill="#6b7c96"/>
+            <path d="M960,150 L994,150"/><path d="M986,144 L994,150 L986,156" fill="#6b7c96"/>
+          </g>
+          <text x="767" y="228" fill="#6b7c96" font-family="Inter,sans-serif" font-size="10.5" text-anchor="middle">jeda manusia</text>
+        </svg>
+        </div>
+        <div class="d-mobile">
+        <svg viewBox="0 0 360 690" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Diagram alur versi tegak: git push, job web dan backend, job images, GHCR, lalu kubectl apply manual dan kubelet menjalankan pod">
+          <g font-family="Inter,sans-serif" text-anchor="middle">
+            <rect x="8" y="8" width="344" height="380" rx="12" fill="rgba(34,211,238,.04)" stroke="#22d3ee" stroke-width="1.3" stroke-dasharray="9,5"/>
+            <text x="180" y="30" fill="#22d3ee" font-size="11.5" font-weight="600">Otomatis &mdash; GitHub Actions</text>
+
+            <rect x="30" y="44" width="300" height="68" rx="8" fill="rgba(148,163,184,.08)" stroke="#94a3b8" stroke-width="1.2"/>
+            <text x="180" y="72" fill="#fff" font-size="12">git push</text>
+            <text x="180" y="92" fill="#94a3b8" font-size="10">development atau production</text>
+
+            <rect x="30" y="132" width="300" height="68" rx="8" fill="rgba(8,51,68,.5)" stroke="#22d3ee" stroke-width="1.2"/>
+            <text x="180" y="160" fill="#fff" font-size="12">job web + backend</text>
+            <text x="180" y="180" fill="#94a3b8" font-size="10">typecheck, build, test</text>
+
+            <rect x="30" y="220" width="300" height="68" rx="8" fill="rgba(8,51,68,.5)" stroke="#22d3ee" stroke-width="1.2"/>
+            <text x="180" y="248" fill="#fff" font-size="12">job images</text>
+            <text x="180" y="268" fill="#94a3b8" font-size="10">lima docker build</text>
+
+            <rect x="30" y="308" width="300" height="68" rx="8" fill="rgba(251,146,60,.28)" stroke="#fb923c" stroke-width="1.2"/>
+            <text x="180" y="336" fill="#fff" font-size="12">GHCR</text>
+            <text x="180" y="356" fill="#94a3b8" font-size="10">registry privat, tag ikut branch</text>
+
+            <rect x="8" y="404" width="344" height="278" rx="12" fill="rgba(251,191,36,.04)" stroke="#fbbf24" stroke-width="1.3" stroke-dasharray="9,5"/>
+            <text x="180" y="426" fill="#fbbf24" font-size="11.5" font-weight="600">Manual &mdash; di k8s-master</text>
+
+            <rect x="30" y="440" width="300" height="68" rx="8" fill="rgba(120,53,15,.35)" stroke="#fbbf24" stroke-width="1.2"/>
+            <text x="180" y="468" fill="#fff" font-size="12">kubectl apply -k</text>
+            <text x="180" y="488" fill="#94a3b8" font-size="10">overlays/&lt;env&gt;, didahului dry-run</text>
+
+            <rect x="30" y="528" width="300" height="68" rx="8" fill="rgba(52,211,153,.12)" stroke="#34d399" stroke-width="1.2"/>
+            <text x="180" y="556" fill="#fff" font-size="12">kubelet + containerd</text>
+            <text x="180" y="576" fill="#94a3b8" font-size="10">tarik image, jalankan pod</text>
+
+            <rect x="30" y="616" width="300" height="52" rx="8" fill="rgba(148,163,184,.06)" stroke="#94a3b8" stroke-width="1.2"/>
+            <text x="180" y="648" fill="#e2e8f0" font-size="11.5">pod Running di k8s-worker</text>
+          </g>
+        </svg>
+        </div>
+        <figcaption>Batas antara CI dan CD berada tepat di GHCR. Semua yang di kiri otomatis, semua yang di kanan diketik manusia.</figcaption>
+      </figure>
+
+      <h3>Kustomize, bukan Helm, untuk aplikasi</h3>
+      <p>
+        Manifest aplikasi ditulis sebagai kustomize: satu folder <code>base</code> berisi definisi yang
+        sama untuk semua environment, dan satu folder <code>overlays</code> per environment yang hanya
+        menimpa hal yang memang berbeda, yaitu nama namespace, tag image, nama domain, daftar origin CORS,
+        dan konfigurasi. Helm tetap dipakai, tetapi hanya untuk memasang Traefik.
+      </p>
+
+      <ul class="clean">
+        <li><b>Membaca dulu</b> dengan <code>kubectl kustomize overlays/&lt;env&gt;</code>, lalu <code>kubectl apply --dry-run=server</code> yang memvalidasi manifest terhadap cluster tanpa memasang apa pun.</li>
+        <li><b>Memasang</b> dengan <code>kubectl apply -k overlays/&lt;env&gt;</code>, menghasilkan sekitar dua belas resource.</li>
+        <li><b>Memperbarui versi</b> dengan <code>kubectl rollout restart</code>, karena tag image stabil sehingga pod yang sudah berjalan tidak menarik ulang image hanya karena isi tag berubah di registry.</li>
+      </ul>
+
+      <div class="note">
+        <p><b>Konsekuensi tag stabil:</b> <code>kubectl apply -k</code> saja tidak cukup setelah CI membangun
+        image baru. Tanpa <i>rollout restart</i>, pod lama tetap menjalankan image lama meski isi tag di
+        registry sudah berganti.</p>
+      </div>
+
+      <div class="deep">
+        <h3>Mengapa pemasangan tidak diotomatiskan</h3>
+        <p>
+          Membangun dan mengirim image hanya butuh izin menulis ke registry. Kalau token itu bocor,
+          kerusakan terbesarnya adalah image di registry tertimpa. Menjalankan <code>kubectl apply</code>
+          dari GitHub Actions berbeda kelas: ia menuntut berkas <code>admin.conf</code> disimpan sebagai
+          rahasia repo, dan berkas itu memberi akses <i>cluster-admin</i> penuh ke seluruh cluster,
+          bukan hanya ke satu environment.
+        </p>
+        <div class="tw">
+          <table>
+            <thead><tr><th style="width:200px">Aspek</th><th>GitHub Actions (push)</th><th>ArgoCD (pull)</th></tr></thead>
+            <tbody>
+              <tr><td><b>Arah hubungan</b></td><td>Dari luar menjangkau cluster</td><td>Dari dalam cluster membaca repo</td></tr>
+              <tr><td><b>Kunci cluster</b></td><td class="no">Ikut keluar ke pihak ketiga</td><td class="yes">Tidak pernah pindah tangan</td></tr>
+              <tr><td><b>Akses ke GitHub</b></td><td>Penuh atas workflow</td><td>Cukup baca saja</td></tr>
+              <tr><td><b>Biaya di cluster</b></td><td>Nihil</td><td>Beberapa ratus MB sampai sekitar 1&ndash;2 GB memori</td></tr>
+              <tr><td><b>Status sekarang</b></td><td>Hanya build dan push</td><td>Belum dipasang, baru dipertimbangkan</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          ArgoCD sendiri gratis dan sumber terbuka, tetapi komponennya berjalan terus di cluster.
+          Pada cluster dengan satu node beban kerja berkapasitas 2 vCPU dan 7.8 GiB, potongan itu terasa,
+          terutama bila development dan production berjalan bersamaan di node yang sama.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ 05 ROUTING ============ -->
+    <section id="routing">
+      <h2><span class="num">05</span>Jalur traffic saat aplikasi dipakai</h2>
+      <p class="sub">Apa yang terjadi antara pengguna mengetik alamat dan data muncul di layar.</p>
+
+      <div class="plain">
+        <b>Bahasa sederhana</b>
+        <p>
+          Semua kunjungan berhenti dulu di satu satpam bernama Traefik, yang berdiri di node worker dan
+          mendengarkan langsung di port 80 dan 443 milik mesin itu. Satpam membaca nama domain yang
+          diketik pengunjung, lalu mengantar ke ruangan yang benar. Halaman web dan permintaan data
+          memakai domain berbeda, sehingga keduanya diantar ke tujuan berbeda pula.
+        </p>
+      </div>
+
+      <figure>
+        <div class="scroller d-wide">
+        <svg viewBox="0 0 1160 360" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Diagram jalur traffic: pengguna menuju Traefik di k8s-worker, Traefik meneruskan ke Service aplikasi web atau Service api, pod api lalu menghubungi postgres dan seaweedfs">
+          <rect x="240" y="30" width="896" height="300" rx="12" fill="rgba(52,211,153,.05)" stroke="#34d399" stroke-width="1.5"/>
+          <text x="262" y="56" fill="#34d399" font-family="Inter,sans-serif" font-size="13.5" font-weight="600">k8s-worker &mdash; port 80 dan 443 milik node, lewat hostPort</text>
+
+          <g font-family="Inter,sans-serif" text-anchor="middle">
+            <rect x="24" y="140" width="150" height="80" rx="8" fill="rgba(148,163,184,.08)" stroke="#94a3b8" stroke-width="1.3"/>
+            <text x="99" y="172" fill="#fff" font-size="12.5">Pengguna</text>
+            <text x="99" y="192" fill="#94a3b8" font-size="10.5">peramban</text>
+            <text x="99" y="207" fill="#94a3b8" font-size="10.5">pembeli atau staf</text>
+
+            <rect x="266" y="80" width="170" height="220" rx="8" fill="rgba(120,53,15,.35)" stroke="#fbbf24" stroke-width="1.4"/>
+            <text x="351" y="112" fill="#fff" font-size="13" font-weight="600">Traefik</text>
+            <text x="351" y="140" fill="#94a3b8" font-size="10.5">80 dialihkan ke 443</text>
+            <text x="351" y="162" fill="#94a3b8" font-size="10.5">sertifikat Let&rsquo;s Encrypt</text>
+            <text x="351" y="184" fill="#94a3b8" font-size="10.5">IngressRoute per domain</text>
+            <text x="351" y="206" fill="#94a3b8" font-size="10.5">middleware CORS</text>
+            <text x="351" y="234" fill="#fb7185" font-size="10.5">blokir /internal/api/v1</text>
+            <text x="351" y="256" fill="#94a3b8" font-size="10.5">dashboard dimatikan</text>
+            <text x="351" y="282" fill="#6b7c96" font-size="10">namespace traefik-system</text>
+
+            <rect x="470" y="80" width="200" height="100" rx="8" fill="rgba(251,146,60,.22)" stroke="#fb923c" stroke-width="1.3"/>
+            <text x="570" y="112" fill="#fff" font-size="12.5">Service web</text>
+            <text x="570" y="134" fill="#94a3b8" font-size="10.5">marketplace, ops, vendor</text>
+            <text x="570" y="152" fill="#94a3b8" font-size="10.5">port 80</text>
+
+            <rect x="470" y="200" width="200" height="100" rx="8" fill="rgba(8,51,68,.5)" stroke="#22d3ee" stroke-width="1.3"/>
+            <text x="570" y="232" fill="#fff" font-size="12.5">Service api</text>
+            <text x="570" y="254" fill="#94a3b8" font-size="10.5">port 3000</text>
+            <text x="570" y="272" fill="#94a3b8" font-size="10.5">satu per namespace</text>
+
+            <rect x="700" y="80" width="200" height="100" rx="8" fill="rgba(251,146,60,.22)" stroke="#fb923c" stroke-width="1.3"/>
+            <text x="800" y="112" fill="#fff" font-size="12.5">pod nginx</text>
+            <text x="800" y="134" fill="#94a3b8" font-size="10.5">berkas statis hasil build</text>
+            <text x="800" y="152" fill="#94a3b8" font-size="10.5">tidak ada kode server</text>
+
+            <rect x="700" y="200" width="200" height="100" rx="8" fill="rgba(8,51,68,.5)" stroke="#22d3ee" stroke-width="1.3"/>
+            <text x="800" y="232" fill="#fff" font-size="12.5">pod api</text>
+            <text x="800" y="254" fill="#94a3b8" font-size="10.5">Go, cmd/api/main.go</text>
+            <text x="800" y="272" fill="#94a3b8" font-size="10.5">baca Secret dan ConfigMap</text>
+
+            <rect x="930" y="200" width="190" height="44" rx="7" fill="rgba(76,29,149,.45)" stroke="#a78bfa" stroke-width="1.3"/>
+            <text x="1025" y="227" fill="#fff" font-size="12">postgres</text>
+
+            <rect x="930" y="256" width="190" height="44" rx="7" fill="rgba(76,29,149,.45)" stroke="#a78bfa" stroke-width="1.3"/>
+            <text x="1025" y="283" fill="#fff" font-size="12">seaweedfs</text>
+
+            <rect x="930" y="80" width="190" height="100" rx="8" fill="rgba(148,163,184,.06)" stroke="#94a3b8" stroke-width="1.3"/>
+            <text x="1025" y="112" fill="#e2e8f0" font-size="12">pod worker</text>
+            <text x="1025" y="134" fill="#94a3b8" font-size="10.5">tanpa Service</text>
+            <text x="1025" y="152" fill="#94a3b8" font-size="10.5">tidak dijangkau dari luar</text>
+          </g>
+
+          <g stroke="#6b7c96" stroke-width="1.5" fill="none">
+            <path d="M174,180 L262,180"/><path d="M254,174 L262,180 L254,186" fill="#6b7c96"/>
+            <path d="M436,130 L466,130"/><path d="M458,124 L466,130 L458,136" fill="#6b7c96"/>
+            <path d="M436,250 L466,250"/><path d="M458,244 L466,250 L458,256" fill="#6b7c96"/>
+            <path d="M670,130 L696,130"/><path d="M688,124 L696,130 L688,136" fill="#6b7c96"/>
+            <path d="M670,250 L696,250"/><path d="M688,244 L696,250 L688,256" fill="#6b7c96"/>
+            <path d="M900,240 L926,232"/><path d="M918,226 L926,232 L919,239" fill="#6b7c96"/>
+            <path d="M900,262 L926,276"/><path d="M918,270 L926,276 L917,282" fill="#6b7c96"/>
+          </g>
+          <text x="218" y="168" fill="#94a3b8" font-family="Inter,sans-serif" font-size="10" text-anchor="middle">DNS</text>
+          <text x="451" y="120" fill="#94a3b8" font-family="Inter,sans-serif" font-size="10" text-anchor="middle">web</text>
+          <text x="451" y="240" fill="#94a3b8" font-family="Inter,sans-serif" font-size="10" text-anchor="middle">api</text>
+          <text x="580" y="344" fill="#6b7c96" font-family="Inter,sans-serif" font-size="10.5" text-anchor="middle">Peramban memanggil domain api secara terpisah, memakai alamat yang sudah dipanggang ke bundle JavaScript.</text>
+        </svg>
+        </div>
+        <div class="d-mobile">
+        <svg viewBox="0 0 360 620" xmlns="http://www.w3.org/2000/svg" role="img"
+             aria-label="Diagram jalur traffic versi tegak: pengguna, Traefik, lalu bercabang ke Service web dan Service api, dan pod api menghubungi postgres">
+          <g font-family="Inter,sans-serif" text-anchor="middle">
+            <rect x="30" y="12" width="300" height="60" rx="8" fill="rgba(148,163,184,.08)" stroke="#94a3b8" stroke-width="1.2"/>
+            <text x="180" y="38" fill="#fff" font-size="12">Pengguna &middot; peramban</text>
+            <text x="180" y="57" fill="#94a3b8" font-size="10">DNS mengarah ke IP publik k8s-worker</text>
+
+            <line x1="180" y1="72" x2="180" y2="96" stroke="#6b7c96" stroke-width="1.5"/>
+
+            <rect x="20" y="98" width="320" height="130" rx="10" fill="rgba(120,53,15,.35)" stroke="#fbbf24" stroke-width="1.3"/>
+            <text x="180" y="124" fill="#fff" font-size="12.5" font-weight="600">Traefik &middot; hostPort 80 dan 443</text>
+            <text x="180" y="148" fill="#94a3b8" font-size="10">80 dialihkan ke 443, sertifikat otomatis</text>
+            <text x="180" y="168" fill="#94a3b8" font-size="10">IngressRoute per domain + CORS</text>
+            <text x="180" y="190" fill="#fb7185" font-size="10">blokir /internal/api/v1</text>
+            <text x="180" y="212" fill="#94a3b8" font-size="10">dashboard dimatikan</text>
+
+            <line x1="110" y1="228" x2="110" y2="252" stroke="#6b7c96" stroke-width="1.5"/>
+            <line x1="250" y1="228" x2="250" y2="252" stroke="#6b7c96" stroke-width="1.5"/>
+
+            <rect x="20" y="254" width="150" height="86" rx="8" fill="rgba(251,146,60,.22)" stroke="#fb923c" stroke-width="1.2"/>
+            <text x="95" y="280" fill="#fff" font-size="11.5">Service web</text>
+            <text x="95" y="300" fill="#94a3b8" font-size="9.5">marketplace</text>
+            <text x="95" y="316" fill="#94a3b8" font-size="9.5">ops, vendor</text>
+
+            <rect x="190" y="254" width="150" height="86" rx="8" fill="rgba(8,51,68,.5)" stroke="#22d3ee" stroke-width="1.2"/>
+            <text x="265" y="280" fill="#fff" font-size="11.5">Service api</text>
+            <text x="265" y="300" fill="#94a3b8" font-size="9.5">port 3000</text>
+
+            <line x1="95" y1="340" x2="95" y2="364" stroke="#6b7c96" stroke-width="1.5"/>
+            <line x1="265" y1="340" x2="265" y2="364" stroke="#6b7c96" stroke-width="1.5"/>
+
+            <rect x="20" y="366" width="150" height="86" rx="8" fill="rgba(251,146,60,.22)" stroke="#fb923c" stroke-width="1.2"/>
+            <text x="95" y="392" fill="#fff" font-size="11.5">pod nginx</text>
+            <text x="95" y="412" fill="#94a3b8" font-size="9.5">berkas statis</text>
+            <text x="95" y="428" fill="#94a3b8" font-size="9.5">hasil build</text>
+
+            <rect x="190" y="366" width="150" height="86" rx="8" fill="rgba(8,51,68,.5)" stroke="#22d3ee" stroke-width="1.2"/>
+            <text x="265" y="392" fill="#fff" font-size="11.5">pod api</text>
+            <text x="265" y="412" fill="#94a3b8" font-size="9.5">Go, :3000</text>
+
+            <line x1="265" y1="452" x2="265" y2="476" stroke="#6b7c96" stroke-width="1.5"/>
+
+            <rect x="190" y="478" width="150" height="44" rx="7" fill="rgba(76,29,149,.45)" stroke="#a78bfa" stroke-width="1.2"/>
+            <text x="265" y="505" fill="#fff" font-size="11.5">postgres</text>
+
+            <rect x="190" y="532" width="150" height="44" rx="7" fill="rgba(76,29,149,.45)" stroke="#a78bfa" stroke-width="1.2"/>
+            <text x="265" y="559" fill="#fff" font-size="11.5">seaweedfs</text>
+
+            <rect x="20" y="478" width="150" height="98" rx="8" fill="rgba(148,163,184,.06)" stroke="#94a3b8" stroke-width="1.2"/>
+            <text x="95" y="510" fill="#e2e8f0" font-size="11.5">pod worker</text>
+            <text x="95" y="532" fill="#94a3b8" font-size="9.5">tanpa Service</text>
+            <text x="95" y="550" fill="#94a3b8" font-size="9.5">tak dijangkau</text>
+            <text x="95" y="568" fill="#94a3b8" font-size="9.5">dari luar</text>
+          </g>
+        </svg>
+        </div>
+        <figcaption>Satu satpam di depan, dua jalur di belakang: halaman web dan permintaan data.</figcaption>
+      </figure>
+
+      <h3>Kenapa Traefik tidak memakai LoadBalancer</h3>
+      <p>
+        Chart bawaan Traefik membuat Service bertipe <code>LoadBalancer</code>, dan tipe itu hanya
+        mendapat alamat bila cluster berjalan di penyedia cloud yang punya controller untuk itu.
+        Di VPS polos, kolom <code>EXTERNAL-IP</code> akan berstatus <i>pending</i> selamanya. Karena itu
+        dipakai <code>hostPort</code>: pod Traefik mendengarkan langsung di port 80 dan 443 milik node,
+        melewati Service yang tidak pernah terisi. Status <i>pending</i> pada Service itu normal dan
+        bukan tanda kesalahan.
+      </p>
+
+      <div class="tw">
+        <table>
+          <thead>
+            <tr><th style="width:300px">Domain</th><th style="width:190px">Diantar ke</th><th>Catatan</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="mono">development.kmtxpumit.my.id</td><td>Service marketplace</td><td>Halaman web, berkas statis.</td></tr>
+            <tr><td class="mono">development-api.kmtxpumit.my.id</td><td>Service api</td><td>Dipanggil peramban setelah halaman termuat.</td></tr>
+            <tr><td class="mono">development-ops.kmtxpumit.my.id</td><td>Service ops</td><td>Aplikasi internal, isinya masih kerangka.</td></tr>
+            <tr><td class="mono">development-vendor.kmtxpumit.my.id</td><td>Service vendor</td><td>Sebelas layar vendor.</td></tr>
+            <tr><td class="mono">kmtxpumit.my.id dan turunannya</td><td>Namespace production</td><td>Pola sama tanpa awalan <code>development-</code>. Belum pernah dijalankan.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <p><b>DNS harus mengarah ke worker:</b> seluruh record perlu menunjuk IP publik <b>k8s-worker</b>,
+        bukan master, karena semua pod termasuk Traefik dijadwalkan di sana. Salah arah membuat koneksi
+        habis waktu tanpa pesan yang jelas.</p>
+      </div>
+
+      <div class="deep">
+        <h3>Berkas yang mengatur perutean</h3>
+        <ul class="clean">
+          <li><code>base/ingressroute.yaml</code> &mdash; rute api sekaligus pemblokiran <code>/internal/api/v1</code>.</li>
+          <li><code>base/marketplace-ingressroute.yaml</code>, <code>ops-ingressroute.yaml</code>, <code>vendor-ingressroute.yaml</code> &mdash; rute tiap aplikasi web.</li>
+          <li><code>base/middleware-cors.yaml</code> &mdash; daftar origin, berisi nilai sementara yang selalu ditimpa overlay.</li>
+          <li><code>base/serverstransport.yaml</code> &mdash; pengaturan koneksi Traefik ke layanan di belakangnya.</li>
+        </ul>
+        <p>
+          Nama entrypoint <code>websecure</code> dan resolver sertifikat <code>le</code> sengaja disamakan
+          persis dengan yang dipakai di berkas compose lama, supaya manifest tetap nyambung saat berpindah
+          dari satu VPS ke cluster.
+        </p>
+        <div class="note">
+          <p><b>Catatan hardening yang belum selesai:</b> Traefik sendiri memperingatkan bahwa izin berkas
+          <code>acme.json</code>, tempat sertifikat disimpan, bisa berubah setiap Traefik dimulai ulang,
+          karena volume penyimpanannya dipasang tanpa langkah pembetul izin.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 06 RAHASIA ============ -->
+    <section id="rahasia">
+      <h2><span class="num">06</span>Rahasia &amp; registry</h2>
+      <p class="sub">Dua brankas dengan kegunaan yang sama sekali berbeda.</p>
+
+      <div class="plain">
+        <b>Bahasa sederhana</b>
+        <p>
+          Brankas pertama dipakai aplikasi untuk membaca password database. Brankas kedua dipakai node
+          untuk membuktikan dirinya berhak menarik image dari gudang yang sengaja ditutup untuk umum.
+          Keduanya tidak pernah ikut masuk ke repositori kode.
+        </p>
+      </div>
+
+      <div class="grid">
+        <div class="card c-rose">
+          <h4>kmtxpumit-secrets</h4>
+          <p>Dibuat langsung lewat perintah di node master, bukan dari berkas yang di-commit. Berisi lima
+             kunci: pengguna, password, dan nama database, satu token layanan, serta alamat koneksi
+             database yang sudah lengkap.</p>
+        </div>
+        <div class="card c-rose">
+          <h4>ghcr-pull</h4>
+          <p>Kredensial registry bertipe <i>docker-registry</i>. Memakai token dengan izin baca paket saja,
+             bukan token tulis milik CI. Tanpa ini, pod berhenti di <code>ImagePullBackOff</code> dengan
+             pesan tidak sah.</p>
+        </div>
+        <div class="card c-amber">
+          <h4>Keduanya per namespace</h4>
+          <p>Secret tidak merambat antar namespace meski namanya sama. Keduanya wajib dibuat ulang di
+             namespace production, dengan password database yang berbeda dari development.</p>
+        </div>
+      </div>
+
+      <div class="note">
+        <p><b>Password dibuat dalam bentuk heksadesimal, bukan base64.</b> Keluaran base64 bisa mengandung
+        karakter yang punya arti khusus di dalam URL, dan alamat koneksi database adalah sebuah URL.
+        Gejalanya menyesatkan: api dan worker gagal berulang dengan pesan soal port yang tidak sah,
+        seolah masalah jaringan, padahal penyebabnya bentuk password.</p>
+      </div>
+
+      <div class="deep">
+        <h3>Registry sengaja tetap privat</h3>
+        <p>
+          Paket baru di GHCR bersifat privat secara bawaan, dan itu dipertahankan karena repositori
+          kodenya juga privat. Konsekuensinya harus diterima secara sadar: node tidak bisa menarik image
+          sebelum kredensial registry dibuat di namespace yang bersangkutan.
+        </p>
+        <h3>Dua token berbeda, sengaja tidak dipakai ulang</h3>
+        <ul class="clean">
+          <li><b>Token tulis</b> hanya dipegang GitHub Actions, itu pun token bawaan yang dibuat otomatis per jalannya workflow.</li>
+          <li><b>Token baca</b> dipegang cluster, hanya untuk menarik image. Token ini boleh dipakai di kedua namespace karena sifatnya hanya membaca.</li>
+        </ul>
+        <h3>ConfigMap</h3>
+        <p>
+          Nilai yang tidak rahasia berada di <code>base/configmap.yaml</code> dan ditimpa per environment.
+          Satu nilai masih menunggu keputusan: awalan nomor faktur di overlay production masih berupa
+          penanda sementara. Nilai itu perlu diisi sebelum faktur produksi pertama terbit, karena
+          penomoran tidak bisa diubah di tengah jalan.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ 07 DATA ============ -->
+    <section id="data">
+      <h2><span class="num">07</span>Data &amp; penyimpanan</h2>
+      <p class="sub">Di mana data disimpan, dan bagian mana yang masih dikerjakan tangan.</p>
+
+      <div class="plain">
+        <b>Bahasa sederhana</b>
+        <p>
+          Pod bersifat sementara. Kalau database dijalankan begitu saja, datanya hilang setiap pod
+          dimulai ulang. Karena itu dipasang penyedia penyimpanan yang menyediakan ruang tetap di
+          cakram node worker, lalu database dan berkas unggahan dipasangkan ke ruang itu.
+        </p>
+      </div>
+
+      <div class="grid">
+        <div class="card c-violet">
+          <h4>StorageClass local-path</h4>
+          <p>Penyedia volume dari Rancher, dijadikan kelas penyimpanan bawaan. Volumenya berada di cakram
+             node worker itu sendiri, bukan penyimpanan jaringan.</p>
+        </div>
+        <div class="card c-violet">
+          <h4>PostgreSQL</h4>
+          <p>Dijalankan sebagai StatefulSet dengan volume tetap sendiri, satu instans per namespace.
+             Data development dan production tidak pernah bercampur.</p>
+        </div>
+        <div class="card c-violet">
+          <h4>SeaweedFS</h4>
+          <p>Penyimpanan berkas untuk kebutuhan aplikasi, juga berbentuk StatefulSet dengan volume
+             sendiri.</p>
+        </div>
+        <div class="card c-violet">
+          <h4>Volume artefak bersama</h4>
+          <p>Satu volume dipakai bersama oleh api dan worker, tempat menyimpan berkas hasil olahan
+             seperti faktur PDF.</p>
+        </div>
+      </div>
+
+      <div class="note">
+        <p><b>Batas nyata penyimpanan lokal:</b> karena volume menempel pada cakram node worker, data tidak
+        ikut berpindah bila pod dijadwalkan ke node lain. Pada cluster ini hal itu belum menjadi masalah
+        karena memang hanya ada satu node yang menjalankan beban kerja.</p>
+      </div>
+
+      <h3>Dua langkah yang tidak ikut otomatis</h3>
+      <ol class="steps">
+        <li><b>Migrasi skema.</b> Memasang manifest hanya menyalakan container database yang masih kosong. Sebelas berkas migrasi dijalankan sekali per environment lewat koneksi terusan dari node master. Perlu diulang persis bila volume database pernah dihapus.</li>
+        <li><b>Pembuatan admin pertama.</b> Migrasi membuat tabel, bukan isinya. Tabel pengguna tetap kosong, dan tidak ada halaman pendaftaran admin di aplikasi mana pun, karena halaman seperti itu berarti siapa saja di internet bisa mengangkat dirinya menjadi admin. Admin pertama dibuat lewat perintah khusus yang menyambung langsung ke database.</li>
+      </ol>
+
+      <div class="note">
+        <p><b>Status jujur:</b> perintah pembuatan admin pertama ditulis pada 2 September 2026 dan sudah
+        ditinjau manual, tetapi belum pernah dibuktikan berhasil dikompilasi maupun dijalankan terhadap
+        database sungguhan. Kegagalan di titik ini adalah temuan yang wajar, bukan kesalahan pemakai.</p>
+      </div>
+    </section>
+
+    <!-- ============ 08 AKSES ============ -->
+    <section id="akses">
+      <h2><span class="num">08</span>Akses &amp; firewall</h2>
+      <p class="sub">Siapa bisa menjangkau apa, dan lewat lapisan mana.</p>
+
+      <div class="tw">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:230px">Komponen</th>
+              <th style="width:150px">Dari internet</th>
+              <th style="width:170px">Dari tunnel</th>
+              <th>Catatan</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><b>Aplikasi web dan api</b></td><td class="yes">Bisa</td><td class="yes">Bisa</td><td>Lewat Traefik di port 80 dan 443, dialihkan ke HTTPS.</td></tr>
+            <tr><td><b>Jalur <code>/internal/api/v1</code></b></td><td class="no">Tidak</td><td>Lewat terusan</td><td>Diblokir di tingkat Traefik, bukan hanya di aplikasi.</td></tr>
+            <tr><td><b>kube-apiserver</b></td><td class="no">Tidak</td><td class="yes">Bisa</td><td>Hanya dari subnet tunnel, port 6443.</td></tr>
+            <tr><td><b>etcd</b></td><td class="no">Tidak</td><td class="yes">Bisa</td><td>Hanya dari subnet tunnel, port 2379 dan 2380.</td></tr>
+            <tr><td><b>kubelet</b></td><td class="no">Tidak</td><td class="yes">Bisa</td><td>Hanya dari subnet tunnel, port 10250.</td></tr>
+            <tr><td><b>PostgreSQL dan SeaweedFS</b></td><td class="no">Tidak</td><td>Lewat terusan</td><td>Tidak punya rute Traefik. Operator mengaksesnya lewat <code>port-forward</code>.</td></tr>
+            <tr><td><b>Dashboard Traefik</b></td><td class="no">Tidak</td><td class="no">Tidak</td><td>Dimatikan saat pemasangan. Satu permukaan publik yang tidak diminta siapa pun.</td></tr>
+            <tr><td><b>SSH</b></td><td>Terbuka</td><td class="yes">Bisa</td><td>Port 22 terbuka ke seluruh internet. Keputusan sadar karena IP pemilik berubah-ubah.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <p><b>Perbedaan penting:</b> pembatasan di atas berlaku untuk akses dari luar. Komunikasi antar pod
+        di dalam cluster, misalnya api membaca database, berjalan di jaringan Calico dan tidak melewati
+        firewall node. Yang membatasinya di lapisan itu adalah <code>NetworkPolicy</code>.</p>
+      </div>
+
+      <div class="deep">
+        <h3>Dua lapis firewall</h3>
+        <ul class="clean">
+          <li><b>Firewall cloud di panel Hostinger</b> &mdash; lapisan terluar, berlaku sebelum paket sampai ke VPS. Port tunnel dibatasi hanya dari IP node pasangannya, bukan dari mana saja, dan baris terakhirnya menolak sisanya.</li>
+          <li><b>UFW di dalam Ubuntu</b> &mdash; lapisan kedua dengan prinsip tolak semua kecuali yang disebut. Port Kubernetes hanya diizinkan dari subnet tunnel <code>10.10.10.0/24</code>, sedangkan seluruh lalu lintas yang masuk lewat antarmuka <code>wg0</code> diizinkan.</li>
+        </ul>
+        <div class="tw">
+          <table>
+            <thead><tr><th style="width:220px">Port</th><th style="width:230px">Sumber yang diizinkan</th><th>Ada di node</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">22/tcp</td><td>Mana saja</td><td>Keduanya</td></tr>
+              <tr><td class="mono">51820/udp</td><td>IP node pasangannya</td><td>Keduanya</td></tr>
+              <tr><td class="mono">6443/tcp</td><td class="mono">10.10.10.0/24</td><td>Master</td></tr>
+              <tr><td class="mono">2379:2380/tcp</td><td class="mono">10.10.10.0/24</td><td>Master</td></tr>
+              <tr><td class="mono">10250/tcp</td><td class="mono">10.10.10.0/24</td><td>Keduanya</td></tr>
+              <tr><td class="mono">30000:32767/tcp</td><td class="mono">10.10.10.0/24</td><td>Keduanya</td></tr>
+              <tr><td class="mono">80/tcp dan 443/tcp</td><td>Mana saja</td><td>Worker</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note">
+          <p><b>Yang pasti dan yang belum dipastikan:</b> bahwa port 80 dan 443 terbuka adalah fakta, karena
+          ketiga aplikasi web terbukti dibalas lewat HTTPS publik sungguhan dan sertifikat terbit normal,
+          yang mustahil terjadi bila port 80 masih tertutup. Yang belum dikonfirmasi langsung dari panel
+          adalah rincian aturannya, yaitu apakah sumbernya benar-benar bebas dan apakah dipasang di kedua
+          node atau hanya di worker.</p>
+          <p style="margin-top:.6rem">Perlu diingat juga bahwa aturan rentang <code>30000:32767</code> adalah
+          untuk NodePort dan <b>bukan</b> jalur yang dipakai Traefik hari ini. Aturan itu bukan penyebab
+          situs bisa diakses publik.</p>
+        </div>
+        <h3>Prosedur yang dipakai agar tidak terkunci sendiri</h3>
+        <p>
+          Kebijakan bawaan ditetapkan lebih dulu, SSH diizinkan, aturan Kubernetes ditambahkan, seluruh
+          aturan ditinjau sebelum firewall dinyalakan, lalu hasilnya diverifikasi dari sesi SSH baru,
+          bukan dari sesi lama yang sudah terhubung, sebelum sesi lama ditutup.
+        </p>
+      </div>
+    </section>
+
+    <!-- ============ 09 ENVIRONMENT ============ -->
+    <section id="environment">
+      <h2><span class="num">09</span>Dua environment</h2>
+      <p class="sub">Dua kamar terpisah di dalam satu cluster yang sama.</p>
+
+      <div class="plain">
+        <b>Bahasa sederhana</b>
+        <p>
+          Pemisahan antar environment di sini bukan lewat mesin yang berbeda, melainkan lewat namespace.
+          Setiap namespace punya database, rahasia, volume, dan domainnya sendiri. Traefik adalah
+          satu-satunya komponen yang berdiri di luar keduanya dan tahu harus mengantar ke kamar mana.
+        </p>
+      </div>
+
+      <div class="tw">
+        <table>
+          <thead>
+            <tr><th style="width:230px">Aspek</th><th style="width:290px">kmtxpumit-development</th><th>kmtxpumit-production</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><b>Status</b></td><td class="yes">Hidup dan terpakai</td><td class="no">Belum pernah dijalankan</td></tr>
+            <tr><td><b>Tag image</b></td><td class="mono">development</td><td class="mono">production</td></tr>
+            <tr><td><b>Domain</b></td><td class="mono">development-*.kmtxpumit.my.id</td><td class="mono">tanpa awalan development-</td></tr>
+            <tr><td><b>Database</b></td><td>Instans dan volume sendiri</td><td>Instans dan volume sendiri</td></tr>
+            <tr><td><b>Rahasia</b></td><td>Dibuat sendiri</td><td>Wajib dibuat ulang, password berbeda</td></tr>
+            <tr><td><b>Migrasi skema</b></td><td class="yes">Sudah dijalankan</td><td class="no">Belum</td></tr>
+            <tr><td><b>Aplikasi terbukti hidup</b></td><td>api, marketplace, ops, vendor, worker</td><td>Belum ada</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid">
+        <div class="card c-amber">
+          <h4>Risiko yang belum ditangani</h4>
+          <p>Tidak ada <b>ResourceQuota</b> maupun <b>LimitRange</b> per namespace. Di cluster yang hanya
+             punya satu node beban kerja, development bisa menghabiskan sumber daya sampai production
+             kelaparan.</p>
+        </div>
+        <div class="card">
+          <h4>Isolasi yang sudah ada</h4>
+          <p>Rahasia, volume, database, dan domain terpisah penuh. Secret tidak merambat antar namespace
+             meski namanya identik.</p>
+        </div>
+        <div class="card c-rose">
+          <h4>Jalur promosi</h4>
+          <p>Tidak ada promosi otomatis dari development ke production. Keduanya dipasang dengan perintah
+             terpisah dan rahasia berbeda, dijalankan sadar oleh operator.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 10 REPO ============ -->
+    <section id="repo" class="deep">
+      <h2><span class="num">10</span>Peta berkas di repo</h2>
+      <p class="sub">Di mana setiap bagian arsitektur ini benar-benar tinggal.</p>
+
+      <p>
+        Repositori <code>swt-kmtxpumit-platform-fs</code> berisi satu backend Go, tiga aplikasi Svelte,
+        paket bersama, dan seluruh berkas penyebaran. Bagian yang relevan dengan dokumen ini ada di dua
+        tempat: definisi alur otomatis, dan folder <code>deploy/</code>.
+      </p>
+
+      <div class="block">swt-kmtxpumit-platform-fs/
+&#9500;&#9472;&#9472; .github/workflows/ci.yml   # job web + backend + images
+&#9500;&#9472;&#9472; apps/
+&#9474;   &#9500;&#9472;&#9472; backend/                # Go, satu-satunya backend
+&#9474;   &#9474;   &#9500;&#9472;&#9472; cmd/api/main.go     # dikompilasi jadi image api
+&#9474;   &#9474;   &#9500;&#9472;&#9472; cmd/worker/main.go  # dikompilasi jadi image worker
+&#9474;   &#9474;   &#9500;&#9472;&#9472; cmd/bootstrap-admin # pembuat admin pertama
+&#9474;   &#9474;   &#9492;&#9472;&#9472; db/migrations/      # sebelas berkas migrasi
+&#9474;   &#9500;&#9472;&#9472; marketplace/            # SvelteKit statis
+&#9474;   &#9500;&#9472;&#9472; ops/                    # SvelteKit statis, masih kerangka
+&#9474;   &#9492;&#9472;&#9472; vendor/                 # SvelteKit statis, sebelas layar
+&#9500;&#9472;&#9472; packages/                   # contracts, ui, ui-tokens
+&#9492;&#9472;&#9472; deploy/
+    &#9500;&#9472;&#9472; api.Dockerfile
+    &#9500;&#9472;&#9472; worker.Dockerfile
+    &#9500;&#9472;&#9472; marketplace.Dockerfile  # ops dan vendor berpola sama
+    &#9500;&#9472;&#9472; docker-compose.yml      # target lama, satu VPS tanpa cluster
+    &#9492;&#9472;&#9472; k8s/
+        &#9500;&#9472;&#9472; README.md           # dokumentasi versi lengkap
+        &#9500;&#9472;&#9472; base/               # definisi yang sama di semua environment
+        &#9492;&#9472;&#9472; overlays/
+            &#9500;&#9472;&#9472; development/
+            &#9492;&#9472;&#9472; production/</div>
+
+      <h3>Isi folder base</h3>
+      <ul class="clean">
+        <li><b>Beban kerja</b> &mdash; Deployment dan Service untuk api, marketplace, ops, dan vendor, serta Deployment worker yang sengaja tidak punya Service.</li>
+        <li><b>Data</b> &mdash; StatefulSet dan Service untuk Postgres dan SeaweedFS, ditambah satu klaim volume untuk artefak bersama.</li>
+        <li><b>Perutean</b> &mdash; IngressRoute per aplikasi, middleware CORS, dan pengaturan transport Traefik.</li>
+        <li><b>Konfigurasi</b> &mdash; ConfigMap, serta contoh berkas rahasia yang berfungsi sebagai bacaan dan tidak boleh dipasang apa adanya.</li>
+        <li><b>Opsional</b> &mdash; satu agen bantu yang bukan bagian platform, diakses hanya lewat terusan, dan berjalan dengan hak sangat luas sehingga komentarnya wajib dibaca sebelum dipakai.</li>
+      </ul>
+
+      <h3>Isi folder overlay</h3>
+      <p>
+        Setiap overlay hanya berisi hal yang memang berbeda: nama namespace, tag image, nama domain di
+        tiap IngressRoute, daftar origin CORS, dan penimpaan konfigurasi. Overlay production mengikuti pola
+        yang sama persis, hanya tanpa awalan <code>development-</code> pada domainnya.
+      </p>
+    </section>
+
+    <!-- ============ 11 KEAMANAN ============ -->
+    <section id="keamanan">
+      <h2><span class="num">11</span>Ringkasan keamanan</h2>
+      <p class="sub">Yang sudah terpasang, dan yang masih terbuka.</p>
+
+      <h3>Sudah terpasang</h3>
+      <ul class="clean">
+        <li><b>Seluruh lalu lintas internal cluster terenkripsi</b> lewat tunnel, karena provider tidak menyediakan jaringan privat.</li>
+        <li><b>API server tidak terekspos ke internet.</b> Cluster dibangun di atas alamat tunnel, dan port kontrolnya hanya diizinkan dari subnet tunnel.</li>
+        <li><b>Dua lapis firewall</b> yang saling melengkapi, satu di panel penyedia dan satu di dalam sistem operasi.</li>
+        <li><b><code>NetworkPolicy</code> benar-benar ditegakkan</b>, dibuktikan lewat percobaan sebelum dan sesudah policy dipasang.</li>
+        <li><b>Berkas kunci cluster dilindungi</b> dengan izin baca-tulis khusus root, dan salinan cadangannya dienkripsi lalu disimpan di luar server, bukan di server.</li>
+        <li><b>Kunci cluster tidak pernah diserahkan ke pihak ketiga.</b> Otomasi berhenti di registry.</li>
+        <li><b>Rahasia tidak pernah masuk repositori</b>, dibuat langsung lewat perintah di node master.</li>
+        <li><b>Permukaan publik ditekan</b>: dashboard Traefik dimatikan, jalur internal diblokir di tingkat perutean, dan pod worker tidak punya Service.</li>
+      </ul>
+
+      <h3>Masih terbuka</h3>
+      <div class="grid">
+        <div class="card c-rose">
+          <h4>SSH terbuka ke internet</h4>
+          <p>Port 22 menerima dari mana saja karena IP pemilik berubah-ubah. Pengerasan lewat pembatasan
+             percobaan masuk dan penonaktifan otentikasi password belum dipasang.</p>
+        </div>
+        <div class="card c-rose">
+          <h4>Tidak ada cadangan etcd</h4>
+          <p>Belum ada snapshot terjadwal. Bila node master rusak sekarang, cluster hilang tanpa jalur
+             pemulihan.</p>
+        </div>
+        <div class="card c-rose">
+          <h4>Tidak ada pemantauan</h4>
+          <p>Tidak ada pengumpulan metrik, log terpusat, maupun peringatan otomatis. Node atau komponen
+             yang mati tidak akan memberi tahu siapa pun.</p>
+        </div>
+        <div class="card c-amber">
+          <h4>Tanpa batas sumber daya</h4>
+          <p>ResourceQuota dan LimitRange per namespace sempat dirancang tetapi belum terbukti terpasang.</p>
+        </div>
+        <div class="card c-amber">
+          <h4>Tanpa PodSecurity</h4>
+          <p>Aturan penerimaan pod belum diatur, sehingga container masih bisa berjalan sebagai root atau
+             dengan hak istimewa tanpa dicegah.</p>
+        </div>
+        <div class="card c-amber">
+          <h4>Tanpa RBAC berlapis</h4>
+          <p>Akses cluster masih tunggal pemilik, sehingga sistem peran multi-pengguna sengaja tidak
+             dibangun. Perlindungannya bertumpu pada izin berkas dan cadangan terenkripsi.</p>
+        </div>
+      </div>
+
+      <div class="note">
+        <p><b>Cara membaca daftar ini:</b> semua yang di bawah judul &ldquo;masih terbuka&rdquo; adalah keputusan
+        yang diambil sadar pada skala sekarang, bukan hal yang luput. Daftar ini ditulis justru agar tidak
+        hilang dari radar ketika cluster tumbuh.</p>
+      </div>
+    </section>
+
+    <!-- ============ 12 GLOSARIUM ============ -->
+    <section id="glosarium">
+      <h2><span class="num">12</span>Glosarium</h2>
+      <p class="sub">Istilah yang muncul di dokumen ini, dijelaskan tanpa jargon.</p>
+
+      <div class="gloss">
+        <div class="row"><div class="term">Cluster</div><div class="desc">Kumpulan mesin yang bekerja sebagai satu komputer besar. Di sini isinya dua mesin.</div></div>
+        <div class="row"><div class="term">Control plane</div><div class="desc">Bagian yang mengatur: menerima perintah, memutuskan pod ditaruh di mana, dan menyimpan keadaan cluster. <b>Analogi:</b> kantor mandor.</div></div>
+        <div class="row"><div class="term">Node</div><div class="desc">Satu mesin anggota cluster. <b>Master</b> mengatur, <b>worker</b> menjalankan aplikasi.</div></div>
+        <div class="row"><div class="term">Pod</div><div class="desc">Satuan terkecil yang dijalankan Kubernetes, biasanya berisi satu container aplikasi.</div></div>
+        <div class="row"><div class="term">Namespace</div><div class="desc">Sekat di dalam satu cluster. Dua namespace tidak bisa saling menimpa meski nama resource-nya sama.</div></div>
+        <div class="row"><div class="term">Deployment</div><div class="desc">Aturan yang menjaga jumlah salinan sebuah aplikasi tetap sesuai keinginan.</div></div>
+        <div class="row"><div class="term">StatefulSet</div><div class="desc">Seperti Deployment, tetapi untuk aplikasi yang butuh identitas dan penyimpanan tetap, misalnya database.</div></div>
+        <div class="row"><div class="term">Service</div><div class="desc">Alamat tetap di dalam cluster untuk menjangkau sekumpulan pod yang alamatnya berubah-ubah.</div></div>
+        <div class="row"><div class="term">Ingress / IngressRoute</div><div class="desc">Aturan yang memetakan nama domain dari luar ke Service di dalam. IngressRoute adalah bentuk khas Traefik.</div></div>
+        <div class="row"><div class="term">hostPort</div><div class="desc">Cara membuat pod mendengarkan langsung di port milik mesin, dipakai karena VPS tidak punya penyeimbang beban dari penyedia.</div></div>
+        <div class="row"><div class="term">Secret</div><div class="desc">Tempat menyimpan password dan token di dalam cluster, terpisah per namespace dan tidak ikut masuk repositori kode.</div></div>
+        <div class="row"><div class="term">ConfigMap</div><div class="desc">Sama seperti Secret, tetapi untuk nilai yang tidak rahasia.</div></div>
+        <div class="row"><div class="term">PV / PVC</div><div class="desc">Ruang penyimpanan tetap dan permintaan atasnya, supaya data tidak hilang saat pod dimulai ulang.</div></div>
+        <div class="row"><div class="term">StorageClass</div><div class="desc">Aturan yang menentukan bagaimana ruang penyimpanan baru dibuat otomatis ketika diminta.</div></div>
+        <div class="row"><div class="term">CNI / Calico</div><div class="desc">Lapisan jaringan di dalam cluster yang memberi setiap pod alamat sendiri dan menegakkan aturan siapa boleh menghubungi siapa.</div></div>
+        <div class="row"><div class="term">NetworkPolicy</div><div class="desc">Aturan lalu lintas antar pod. Tanpa CNI yang mendukungnya, aturan ini diterima tetapi tidak berlaku.</div></div>
+        <div class="row"><div class="term">WireGuard</div><div class="desc">Terowongan terenkripsi antar mesin, dipakai karena penyedia tidak menyediakan jaringan privat.</div></div>
+        <div class="row"><div class="term">containerd</div><div class="desc">Mesin yang benar-benar menjalankan container di setiap node. Kubernetes hanya yang mengatur.</div></div>
+        <div class="row"><div class="term">kubeadm</div><div class="desc">Alat untuk menyalakan cluster pertama kali dan menggabungkan node baru ke dalamnya.</div></div>
+        <div class="row"><div class="term">kubectl</div><div class="desc">Perkakas baris perintah untuk berbicara dengan cluster. Di sini hanya terpasang di node master.</div></div>
+        <div class="row"><div class="term">Helm</div><div class="desc">Pemasang paket siap pakai untuk Kubernetes. Di sini hanya dipakai untuk Traefik.</div></div>
+        <div class="row"><div class="term">Kustomize</div><div class="desc">Cara menyusun manifest berlapis: satu dasar bersama, lalu penimpaan kecil per environment.</div></div>
+        <div class="row"><div class="term">Image / Registry / GHCR</div><div class="desc">Paket aplikasi siap jalan, gudang tempat menyimpannya, dan gudang milik GitHub yang dipakai di sini.</div></div>
+        <div class="row"><div class="term">CI / CD</div><div class="desc">Menguji dan mengemas otomatis, lalu memasang ke server. Di sini yang otomatis hanya bagian pertama.</div></div>
+        <div class="row"><div class="term">ArgoCD</div><div class="desc">Alat pemasangan otomatis yang hidup di dalam cluster dan menarik dari repositori, bukan didorong dari luar. Belum dipasang.</div></div>
+        <div class="row"><div class="term">SPA</div><div class="desc">Aplikasi web yang seluruh halamannya berupa berkas statis, dan memanggil API dari peramban pengguna.</div></div>
+        <div class="row"><div class="term">SeaweedFS</div><div class="desc">Penyimpanan berkas yang dijalankan sendiri di dalam cluster.</div></div>
+        <div class="row"><div class="term">UFW</div><div class="desc">Penyaring koneksi di tingkat sistem operasi, bekerja sebelum permintaan sampai ke pod.</div></div>
+      </div>
+    </section>
+
+    <!-- ============ 13 CATATAN ============ -->
+    <section id="catatan">
+      <h2><span class="num">13</span>Catatan sumber</h2>
+      <p class="sub">Dari mana isi dokumen ini berasal, dan apa yang belum terverifikasi.</p>
+
+      <h3>Sumber kebenaran</h3>
+      <ul class="clean">
+        <li>Rangkuman setup cluster yang mencatat hanya langkah dengan keluaran nyata, ditulis <b>28 Agustus 2026</b> dan dikoreksi <b>11 September 2026</b>.</li>
+        <li>Panduan penyebaran langkah demi langkah untuk repositori <code>swt-kmtxpumit-platform-fs</code>, versi <b>11 September 2026</b>.</li>
+        <li>Dokumentasi versi lengkap di <code>deploy/k8s/README.md</code> dan riwayat audit di dalam repositori.</li>
+        <li>Keluaran perintah pemeriksaan di kedua node, antara lain status tunnel, daftar node, daftar pod, dan status firewall.</li>
+      </ul>
+
+      <h3>Belum terverifikasi</h3>
+      <ul class="clean">
+        <li>Rincian aturan firewall untuk port 80 dan 443 di panel penyedia, yaitu sumber yang diizinkan dan apakah dipasang di kedua node.</li>
+        <li>Keluaran terbaru status UFW di kedua node. Keluaran yang tercatat berasal dari 28 Agustus dan sudah tidak lengkap.</li>
+        <li>Apakah perintah pembuatan admin pertama benar-benar bisa dikompilasi dan dijalankan terhadap database sungguhan.</li>
+        <li>Apakah ResourceQuota dan LimitRange per namespace pernah benar-benar terpasang.</li>
+        <li>Seluruh isi namespace production, karena namespace itu belum pernah dijalankan sekalipun.</li>
+      </ul>
+
+      <div class="note">
+        <p><b>Cara memperbarui dokumen ini:</b> setiap perubahan pada daftar image, nama domain, aturan
+        firewall, atau struktur overlay perlu tercermin di sini. Ubah juga tanggal verifikasi di bagian
+        atas agar pembaca tahu seberapa baru isinya. Bila sebuah angka atau aturan belum dilihat sendiri,
+        tulis di bagian &ldquo;belum terverifikasi&rdquo; dan jangan dikutip sebagai final.</p>
+      </div>
+    </section>
+
+    <footer>
+      <span>PT Sagung Wahana Teknologi</span>
+      <span>swt-kmtxpumit-platform-fs</span>
+      <span>ghcr.io/pt-sagung-wahana-teknologi</span>
+      <span>diverifikasi 2026-09-11</span>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    var body = document.body;
+    var bR = document.getElementById('btn-ringkas');
+    var bL = document.getElementById('btn-lengkap');
+    var hint = document.getElementById('switch-hint');
+
+    function setMode(mode, persist) {
+      var ringkas = mode === 'ringkas';
+      body.classList.toggle('ringkas', ringkas);
+      bR.setAttribute('aria-pressed', String(ringkas));
+      bL.setAttribute('aria-pressed', String(!ringkas));
+      hint.innerHTML = ringkas
+        ? 'Mode <b style="color:var(--cyan)">Ringkas</b> menyembunyikan nama teknis, alamat IP, dan konfigurasi.'
+        : 'Mode <b style="color:var(--cyan)">Lengkap</b> menampilkan nama teknis, alamat IP, dan konfigurasi.';
+      if (persist) { try { localStorage.setItem('kmtxpumit-mode', mode); } catch (e) {} }
+    }
+
+    bR.addEventListener('click', function () { setMode('ringkas', true); });
+    bL.addEventListener('click', function () { setMode('lengkap', true); });
+
+    var saved = null;
+    try { saved = localStorage.getItem('kmtxpumit-mode'); } catch (e) {}
+    setMode(saved === 'ringkas' ? 'ringkas' : 'lengkap', false);
+
+    // ---- navigasi bawah: lembar daftar isi, penanda bagian, bilah kemajuan ----
+    var links = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
+    var sheet = document.getElementById('sheet');
+    var sheetList = document.getElementById('sheet-list');
+    var sheetNow = document.getElementById('sheet-now');
+    var scrim = document.getElementById('scrim');
+    var btnToc = document.getElementById('nav-toc');
+    var btnMode = document.getElementById('nav-mode');
+    var btnGloss = document.getElementById('nav-gloss');
+    var btnTop = document.getElementById('nav-top');
+    var modeLabel = document.getElementById('nav-mode-label');
+    var progress = document.getElementById('mnav-progress');
+    var sLinks = [];
+
+    links.forEach(function (a) {
+      var c = a.cloneNode(true);
+      c.classList.remove('deep');
+      sheetList.appendChild(c);
+      sLinks.push(c);
+    });
+
+    function openSheet() {
+      body.classList.add('nav-open');
+      btnToc.setAttribute('aria-expanded', 'true');
+      btnToc.classList.add('on');
+      var cur = sheetList.querySelector('a.on');
+      if (cur) cur.scrollIntoView({ block: 'nearest' });
+    }
+    function closeSheet() {
+      body.classList.remove('nav-open');
+      btnToc.setAttribute('aria-expanded', 'false');
+      btnToc.classList.remove('on');
+    }
+    btnToc.addEventListener('click', function () {
+      if (body.classList.contains('nav-open')) closeSheet(); else openSheet();
+    });
+    scrim.addEventListener('click', closeSheet);
+    sheet.addEventListener('click', function (e) { if (e.target.closest('a')) closeSheet(); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && body.classList.contains('nav-open')) closeSheet();
+    });
+
+    btnGloss.addEventListener('click', function () {
+      closeSheet();
+      document.getElementById('glosarium').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    btnTop.addEventListener('click', function () {
+      closeSheet();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    btnMode.addEventListener('click', function () {
+      setMode(body.classList.contains('ringkas') ? 'lengkap' : 'ringkas', true);
+    });
+
+    // samakan tampilan bilah bawah dan lembar dengan mode yang aktif
+    var deepHrefs = links.filter(function (a) { return a.classList.contains('deep'); })
+                         .map(function (a) { return a.getAttribute('href'); });
+    function syncMode() {
+      var ringkas = body.classList.contains('ringkas');
+      modeLabel.textContent = ringkas ? 'Ringkas' : 'Lengkap';
+      btnMode.classList.toggle('on', ringkas);
+      sLinks.forEach(function (a) {
+        if (deepHrefs.indexOf(a.getAttribute('href')) > -1) a.hidden = ringkas;
+      });
+    }
+    bR.addEventListener('click', syncMode);
+    bL.addEventListener('click', syncMode);
+    btnMode.addEventListener('click', syncMode);
+    syncMode();
+
+    function setActive(id) {
+      links.forEach(function (a) {
+        var on = a.getAttribute('href') === '#' + id;
+        a.style.color = on ? 'var(--text)' : '';
+        a.style.borderLeftColor = on ? 'var(--cyan)' : '';
+      });
+      sLinks.forEach(function (a) {
+        var on = a.getAttribute('href') === '#' + id;
+        a.classList.toggle('on', on);
+        if (on) {
+          var num = a.querySelector('.num').textContent;
+          sheetNow.textContent = num + ' · ' + a.textContent.replace(num, '').trim();
+        }
+      });
+    }
+
+    var sections = links
+      .map(function (a) { return document.querySelector(a.getAttribute('href')); })
+      .filter(Boolean);
+
+    if ('IntersectionObserver' in window && sections.length) {
+      var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) { if (en.isIntersecting) setActive(en.target.id); });
+      }, { rootMargin: '-12% 0px -70% 0px' });
+      sections.forEach(function (s) { obs.observe(s); });
+    }
+
+    var ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function () {
+        var d = document.documentElement;
+        var max = d.scrollHeight - d.clientHeight;
+        progress.style.width = (max > 0 ? (d.scrollTop / max) * 100 : 0) + '%';
+        ticking = false;
+      });
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  })();
+</script>
 </body>
 </html>
