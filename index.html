@@ -130,6 +130,16 @@
   .card ul.clean{margin-bottom:0}
   .card ul.clean li{margin-bottom:.4rem;font-size:.87rem}
 
+  /* ---------- video embed ---------- */
+  .video{margin:1.4rem 0 1.6rem;background:var(--panel);border:1px solid var(--line);
+    border-radius:.85rem;padding:1.35rem}
+  .video-frame{position:relative;aspect-ratio:16/9;background:#0a1120;border:1px solid var(--line-soft);
+    border-radius:.6rem;overflow:hidden}
+  .video-frame.is-mobile{aspect-ratio:9/16;max-width:min(100%,calc(80vh*9/16));margin:0 auto}
+  .video-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+  .video-cap{margin-top:.85rem;font-size:.83rem;color:var(--dim);text-align:center}
+  @media(max-width:719px){ .video{padding:.8rem} }
+
   /* ---------- figures ---------- */
   figure{margin:1.4rem 0 1.6rem;background:var(--panel);border:1px solid var(--line);
     border-radius:.85rem;padding:1.35rem}
@@ -377,6 +387,16 @@
           <p>Hanya ada satu control-plane node. Jika node master mati, seluruh cluster berhenti.
              Ini keputusan sadar, bukan kelalaian.</p>
         </div>
+      </div>
+
+      <div class="video" id="ringkasan-video"
+           data-src-desktop="https://drive.google.com/file/d/1yseRDqZeeACQURogm2lNT0r1Jk_Qp8Dl/preview"
+           data-src-mobile="https://drive.google.com/file/d/1qHM9A7KIJBpCf1-OE3WrgHb1xJVO5DVI/preview">
+        <div class="video-frame">
+          <iframe id="ringkasan-video-frame" title="Video ringkasan KMTxPUM Platform"
+                  allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe>
+        </div>
+        <p class="video-cap" id="ringkasan-video-cap">Video ringkasan platform</p>
       </div>
     </section>
 
@@ -1500,6 +1520,32 @@ PersistentKeepalive = 25</div>
 
   </main>
 </div>
+
+<script>
+  /* Video ringkasan: pilih embed desktop/mobile sesuai perangkat, ikut berubah saat resize/rotasi */
+  (function () {
+    var box = document.getElementById('ringkasan-video');
+    var frame = document.getElementById('ringkasan-video-frame');
+    var cap = document.getElementById('ringkasan-video-cap');
+    if (!box || !frame) return;
+    var mq = window.matchMedia('(max-width:719px)');
+    var uaMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); /* iPadOS */
+
+    function apply() {
+      /* mobile = perangkat mobile asli ATAU jendela sempit (mode responsive); selain itu desktop */
+      var mobile = uaMobile || mq.matches;
+      var src = mobile ? box.dataset.srcMobile : box.dataset.srcDesktop;
+      frame.parentNode.classList.toggle('is-mobile', mobile);
+      if (frame.getAttribute('src') !== src) frame.setAttribute('src', src);
+      cap.textContent = 'Video ringkasan platform · versi ' + (mobile ? 'mobile' : 'desktop');
+    }
+    apply();
+    if (mq.addEventListener) mq.addEventListener('change', apply);
+    else mq.addListener(apply);
+    window.addEventListener('orientationchange', apply);
+  })();
+</script>
 
 <script>
   (function () {
