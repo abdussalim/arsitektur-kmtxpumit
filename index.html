@@ -352,6 +352,17 @@
       <h2><span class="num">00</span>Ringkasan</h2>
       <p class="sub">Lima kalimat yang menjelaskan seluruh sistem. Sisanya hanya memperdalam bagian ini.</p>
 
+      <div class="video" id="ringkasan-video"
+           data-src-desktop="https://drive.google.com/file/d/1yseRDqZeeACQURogm2lNT0r1Jk_Qp8Dl/preview"
+           data-src-mobile="https://drive.google.com/file/d/1qHM9A7KIJBpCf1-OE3WrgHb1xJVO5DVI/preview">
+        <div class="video-frame">
+          <iframe id="ringkasan-video-frame" title="Video ringkasan KMTxPUM Platform"
+                  allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe>
+        </div>
+        <p class="video-cap"><span id="ringkasan-video-cap">Video ringkasan platform</span>
+          &middot; <a id="ringkasan-video-open" href="#" target="_blank" rel="noopener">putar di Google Drive</a></p>
+      </div>
+
       <div class="plain">
         <b>Analogi singkat</b>
         <p>
@@ -389,15 +400,6 @@
         </div>
       </div>
 
-      <div class="video" id="ringkasan-video"
-           data-src-desktop="https://drive.google.com/file/d/1yseRDqZeeACQURogm2lNT0r1Jk_Qp8Dl/preview"
-           data-src-mobile="https://drive.google.com/file/d/1qHM9A7KIJBpCf1-OE3WrgHb1xJVO5DVI/preview">
-        <div class="video-frame">
-          <iframe id="ringkasan-video-frame" title="Video ringkasan KMTxPUM Platform"
-                  allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe>
-        </div>
-        <p class="video-cap" id="ringkasan-video-cap">Video ringkasan platform</p>
-      </div>
     </section>
 
     <!-- ============ 01 PLATFORM ============ -->
@@ -1527,6 +1529,7 @@ PersistentKeepalive = 25</div>
     var box = document.getElementById('ringkasan-video');
     var frame = document.getElementById('ringkasan-video-frame');
     var cap = document.getElementById('ringkasan-video-cap');
+    var open = document.getElementById('ringkasan-video-open');
     if (!box || !frame) return;
     var mq = window.matchMedia('(max-width:719px)');
     var uaMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
@@ -1538,6 +1541,7 @@ PersistentKeepalive = 25</div>
       var src = mobile ? box.dataset.srcMobile : box.dataset.srcDesktop;
       frame.parentNode.classList.toggle('is-mobile', mobile);
       if (frame.getAttribute('src') !== src) frame.setAttribute('src', src);
+      open.href = src.replace(/\/preview$/, '/view');
       cap.textContent = 'Video ringkasan platform · versi ' + (mobile ? 'mobile' : 'desktop');
     }
     apply();
