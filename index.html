@@ -359,7 +359,8 @@
           <iframe id="ringkasan-video-frame" title="Video ringkasan KMTxPUM Platform"
                   allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe>
         </div>
-        <p class="video-cap" id="ringkasan-video-cap">Video ringkasan platform</p>
+        <p class="video-cap"><span id="ringkasan-video-cap">Video ringkasan platform</span>
+          &middot; <a id="ringkasan-video-open" href="#" target="_blank" rel="noopener">putar di Google Drive</a></p>
       </div>
 
       <div class="plain">
@@ -1528,6 +1529,7 @@ PersistentKeepalive = 25</div>
     var box = document.getElementById('ringkasan-video');
     var frame = document.getElementById('ringkasan-video-frame');
     var cap = document.getElementById('ringkasan-video-cap');
+    var open = document.getElementById('ringkasan-video-open');
     if (!box || !frame) return;
     var mq = window.matchMedia('(max-width:719px)');
     var uaMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
@@ -1539,6 +1541,7 @@ PersistentKeepalive = 25</div>
       var src = mobile ? box.dataset.srcMobile : box.dataset.srcDesktop;
       frame.parentNode.classList.toggle('is-mobile', mobile);
       if (frame.getAttribute('src') !== src) frame.setAttribute('src', src);
+      open.href = src.replace(/\/preview$/, '/view');
       cap.textContent = 'Video ringkasan platform · versi ' + (mobile ? 'mobile' : 'desktop');
     }
     apply();
